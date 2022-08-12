@@ -1,10 +1,14 @@
 START
 
+°example = 2
+
 cl Example{
     fn init{x}{
         own.x = x
-        -> x
+        -> own.x ^ 2
     }
 }
+
+example = Example{example}
 
 END
