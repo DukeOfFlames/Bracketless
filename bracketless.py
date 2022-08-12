@@ -46,7 +46,7 @@ class NodeType:
     Start = 6
     End = 7
     Block = 8
-    InternalFunctionPrefix = 9
+    #InternalFunctionPrefix = 9
     Comma = 10
     PrefixOperator = 11
     # Quote = 12
@@ -68,6 +68,7 @@ class NodeType:
     Type = 28
     #InternalFunction = 29
     DeclarationAssignment = 30
+    BuiltinIdentifier = 31
 
     def string(node_type):
         return {
@@ -80,7 +81,6 @@ class NodeType:
             NodeType.Start: "Start",
             NodeType.End: "End",
             NodeType.Block: "Block",
-            NodeType.InternalFunctionPrefix: "InternalFunctionPrefix",
             NodeType.Comma: "Comma",
             NodeType.PrefixOperator: "PrefixOperator",
             NodeType.List: "List",
@@ -99,7 +99,8 @@ class NodeType:
             NodeType.InfixOperation: "InfixOperation",
             NodeType.Colon: "Colon",
             NodeType.Type: "Type",
-            NodeType.DeclarationAssignment: "DeclarationAssignment"
+            NodeType.DeclarationAssignment: "DeclarationAssignment",
+            NodeType.BuiltinIdentifier: "BuiltinIdentifier"
         }[node_type]
 
     def is_expression(node_type):
@@ -109,7 +110,8 @@ class NodeType:
             NodeType.ConditionalExpression, NodeType.Function, NodeType.Class,
             NodeType.Boolean, NodeType.FunctionCall, NodeType.PrefixOperation,
             NodeType.PostfixOperation, NodeType.InfixOperation,
-            NodeType.DeclarationAssignment
+            NodeType.DeclarationAssignment,
+            NodeType.BuiltinIdentifier
         ]
 
 
@@ -318,6 +320,10 @@ class Node:
         if self.type == NodeType.Identifier:
             name = self.value
             return execution_environment.get_variable(name)
+            
+        if self.type == NodeType.BuiltinIdentifier:
+            name = self.value
+            return Builtins.builtins[name]
 
         if self.type == NodeType.Function:
             execution_environment.define_variable(self.value["name"], self)
@@ -328,6 +334,11 @@ class Node:
 
         raise Exception(
             f"Could not interpret Node of type {NodeType.string(self.type)}")
+            
+class Builtins:
+    def drucke(execution_environment, params):
+        print(params)
+    builtins = {"drucke": Node(NodeType.Function, {"type": FunctionType.Internal, "body": drucke})}
 
 
 class Error(Exception):  # TODO: Implement in own language
@@ -533,7 +544,7 @@ class File:
     def recognize_declaration_assignment(self, things, o):
         if len(things) >= o + 2 and things[o + 0].type == NodeType.PrefixOperator and things[o + 0].value == '°' \
                 and things[o + 1].type == NodeType.Assignment:
-            return things[:o] + [Node(NodeType.DeclarationAssignment, things[1].value)] + things[(o + 3):], True
+            return things[:o] + [Node(NodeType.DeclarationAssignment, things[1].value)] + things[(o + 2):], True
         return things, False
 
     def repeatedly_transform_thing_list(self, things):
@@ -622,12 +633,13 @@ class File:
     def is_separator(self):
         return self.get() in self.separators
 
-    def is_internal_prefix(self):
+    def is_builtin_identifier(self):
         return self.get() == '#'
 
-    def parse_internal_prefix(self):
+    def parse_builtin_identifier(self):
         self.position += 1
-        return Node(NodeType.InternalFunctionPrefix, self.get())
+        name = self.parse_identifier().value
+        return Node(NodeType.BuiltinIdentifier, name)
 
     def is_prefix_operator(self):
         return any([self.slice(len(op)) == op for op in self.prefix_operators])
@@ -675,7 +687,7 @@ class File:
             (self.is_block, self.parse_block)),
             (self.is_closing_curly, self.parse_closing_curly),
             (self.is_comma, self.parse_comma),
-            (self.is_internal_prefix, self.parse_internal_prefix),
+            (self.is_builtin_identifier, self.parse_builtin_identifier),
             (self.is_boolean, self.parse_boolean),
             (self.is_colon, self.parse_colon)
         ]:
@@ -928,7 +940,6 @@ def main(filename):
     print("")
     print("Interpreting...")
     root_node.interpret(ExecutionEnvironment())
-
     print("")
 
 
