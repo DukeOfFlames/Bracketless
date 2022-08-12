@@ -9,7 +9,7 @@ cl Example{
     }
 
     fn sum{}{
-        ex = 0
+        °ex = 0
         for i : own.value{
           ex += 1
         }

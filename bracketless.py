@@ -287,6 +287,9 @@ class Node:
             else:
                 raise Exception
 
+        if self.type == NodeType.Class:
+            class_name = self.value[0]
+
         if self.type == NodeType.PrefixOperation:
             op = self.value[0]
             v = self.value[1].interpret(execution_environment)
@@ -1009,11 +1012,12 @@ def main(filename):
 
 
 tests = []
-tests += ["assignment", "scope_test", "comments", "functions"]
+# tests += ["assignment", "scope_test", "comments", "functions"]
 # tests += ["if_test"]
-tests += ["type_assignment"]
-tests += ["declarations"]
-tests += ["dot"]
+# tests += ["type_assignment"]
+# tests += ["declarations"]
+# tests += ["dot"]
+tests += ["brack"]
 
 for test in tests:
     print(f"Running test: {test}")
