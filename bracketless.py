@@ -113,6 +113,10 @@ class NodeType:
             NodeType.InternalFunction, NodeType.DeclarationAssignment
         ]
 
+class FunctionType:
+    External = 0
+    Internal = 1
+
 
 class ExecutionEnvironment:
     def __init__(self):
@@ -237,21 +241,26 @@ class Node:
                 for value in self.value[1]
             ]
             func = execution_environment.get_value(func_name).value
-            func_body = func[2]
-            func_arg_names = [name for (name, type) in func[1]]
-            with execution_environment:
-                if len(func_arg_names) != len(func_arg_values):
-                    raise Exception
-                for i in range(len(func_arg_names)):
-                    execution_environment.set_value(func_arg_names[i],
-                                                    func_arg_values[i])
-                try:
-                    func_body.interpret(execution_environment)
-                except Return as r:
-                    return_value = r.return_value
-                else:
-                    raise Exception("Function body did not return any value")
-            return return_value
+            if func["type"] == FunctionType.External:
+                func_body = func["body"]
+                func_arg_names = [name for (name, type) in func["arg_names"]]
+                with execution_environment:
+                    if len(func_arg_names) != len(func_arg_values):
+                        raise Exception
+                    for i in range(len(func_arg_names)):
+                        execution_environment.set_value(func_arg_names[i],
+                                                        func_arg_values[i])
+                    try:
+                        func_body.interpret(execution_environment)
+                    except Return as r:
+                        return_value = r.return_value
+                    else:
+                        raise Exception("Function body did not return any value")
+                return return_value
+            elif func[0] == FunctionType.Internal:
+                ...
+            else:
+                raise Exception
 
         if self.type == NodeType.PrefixOperation:
             op = self.value[0]
@@ -276,7 +285,7 @@ class Node:
             return execution_environment.get_value(name)
 
         if self.type == NodeType.Function:
-            execution_environment.set_value(self.value[0], self)
+            execution_environment.set_value(self.value["name"], self)
             return self
 
         if self.type in [NodeType.String, NodeType.Number, NodeType.List]:
@@ -678,7 +687,7 @@ class File:
                 '<='
         ]:
             return True
-        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-']:
+        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.']:
             return True
 
     def parse_infix_operator(self):
@@ -693,10 +702,11 @@ class File:
             s = self.slice(2)
             self.position += 2
             return Node(NodeType.InfixOperator, s)
-        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-']:
+        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.']:
             c = self.get()
             self.position += 1
             return Node(NodeType.InfixOperator, c)
+        raise Exception
 
     def is_start(self):
         return self.slice(5) == "START"
@@ -839,11 +849,11 @@ class File:
         self.skip_useless()
         body = self.parse_function_body()
         self.skip_useless()
-        return Node(NodeType.Function, (name, parameters, body))
+        return Node(NodeType.Function, {"type": FunctionType.External, "name": name, "arg_names": parameters, "body": body})
 
 
 def main(filename):
-    with open(filename, "rt", encoding='utf-8') as f:
+    with open(filename, "rt", encoding="utf-8") as f:
         contents = f.read()
     file = File(contents)
     root_node = file.parse()
@@ -861,7 +871,7 @@ tests += ["assignment", "scope_test", "comments", "functions"]
 #tests += ["if_test"]
 tests += ["type_assignment"]
 tests += ["declarations"]
-#tests += ["dot"]
+tests += ["dot"]
 
 for test in tests:
     print(f"Running test: {test}")

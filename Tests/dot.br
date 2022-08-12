@@ -7,9 +7,9 @@ fn f{x} {
 }
 
 fn g{x} {
-    -> x // 2
+    -> x + 1
 }
 
-#drucke{{f . g}{a}}
+b = {f . g}{a}
 
 END
