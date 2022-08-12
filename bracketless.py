@@ -46,7 +46,7 @@ class NodeType:
     Start = 6
     End = 7
     Block = 8
-    InternalFunctionPrefix = 9
+    # InternalFunctionPrefix = 9
     Comma = 10
     PrefixOperator = 11
     # Quote = 12
@@ -68,6 +68,7 @@ class NodeType:
     Type = 28
     # InternalFunction = 29
     DeclarationAssignment = 30
+    BuiltinIdentifier = 31
 
     def string(node_type):
         return {
@@ -80,7 +81,6 @@ class NodeType:
             NodeType.Start: "Start",
             NodeType.End: "End",
             NodeType.Block: "Block",
-            NodeType.InternalFunctionPrefix: "InternalFunctionPrefix",
             NodeType.Comma: "Comma",
             NodeType.PrefixOperator: "PrefixOperator",
             NodeType.List: "List",
@@ -100,6 +100,7 @@ class NodeType:
             NodeType.Colon: "Colon",
             NodeType.Type: "Type",
             NodeType.DeclarationAssignment: "DeclarationAssignment",
+            NodeType.BuiltinIdentifier: "BuiltinIdentifier",
         }[node_type]
 
     def is_expression(node_type):
@@ -119,6 +120,7 @@ class NodeType:
             NodeType.PostfixOperation,
             NodeType.InfixOperation,
             NodeType.DeclarationAssignment,
+            NodeType.BuiltinIdentifier,
         ]
 
 
@@ -352,6 +354,10 @@ class Node:
             name = self.value
             return execution_environment.get_variable(name)
 
+        if self.type == NodeType.BuiltinIdentifier:
+            name = self.value
+            return Builtins.builtins[name]
+
         if self.type == NodeType.Function:
             execution_environment.define_variable(self.value["name"], self)
             return self
@@ -362,6 +368,17 @@ class Node:
         raise Exception(
             f"Could not interpret Node of type {NodeType.string(self.type)}"
         )
+
+
+class Builtins:
+    def drucke(execution_environment, params):
+        print(params)
+
+    builtins = {
+        "drucke": Node(
+            NodeType.Function, {"type": FunctionType.Internal, "body": drucke}
+        )
+    }
 
 
 class Error(Exception):  # TODO: Implement in own language
@@ -608,7 +625,7 @@ class File:
             return (
                 things[:o]
                 + [Node(NodeType.DeclarationAssignment, things[1].value)]
-                + things[(o + 3) :],
+                + things[(o + 2) :],
                 True,
             )
         return things, False
@@ -697,12 +714,13 @@ class File:
     def is_separator(self):
         return self.get() in self.separators
 
-    def is_internal_prefix(self):
+    def is_builtin_identifier(self):
         return self.get() == "#"
 
-    def parse_internal_prefix(self):
+    def parse_builtin_identifier(self):
         self.position += 1
-        return Node(NodeType.InternalFunctionPrefix, self.get())
+        name = self.parse_identifier().value
+        return Node(NodeType.BuiltinIdentifier, name)
 
     def is_prefix_operator(self):
         return any([self.slice(len(op)) == op for op in self.prefix_operators])
@@ -754,7 +772,7 @@ class File:
             ),
             (self.is_closing_curly, self.parse_closing_curly),
             (self.is_comma, self.parse_comma),
-            (self.is_internal_prefix, self.parse_internal_prefix),
+            (self.is_builtin_identifier, self.parse_builtin_identifier),
             (self.is_boolean, self.parse_boolean),
             (self.is_colon, self.parse_colon),
         ]:
@@ -1048,7 +1066,6 @@ def main(filename):
     print("")
     print("Interpreting...")
     root_node.interpret(ExecutionEnvironment())
-
     print("")
 
 
