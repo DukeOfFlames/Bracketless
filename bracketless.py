@@ -135,7 +135,7 @@ class ExecutionEnvironment:
             print("  }")
         print("]")
 
-    def get_value(self, name):
+    def get_variable(self, name):
         # Search through all scopes and return the value of the innermost variable with a matching name
         for i in range(len(self.env))[::-1]:
             if name in self.env[i].keys():
@@ -143,14 +143,18 @@ class ExecutionEnvironment:
         # If no variable matches the name, raise an Error
         raise Exception(f"Could not find variable named {repr(name)}")
 
-    def set_value(self, name, value):
+    def define_variable(self, name, value):
+        if name in self.env[-1].keys():
+            raise Exception(f"Variable {repr(name)} is already defined")
+        self.env[-1][name] = value
+
+    def set_variable(self, name, value):
         # Search through all scopes and set the value of the innermost variable with a matching name
         for i in range(len(self.env))[::-1]:
             if name in self.env[i].keys():
                 self.env[i][name] = value
-                return
-        # If no variable matches the name, create a new variable with the given name and value
-        self.env[-1][name] = value
+        # If no variable matches the name, raise an Error
+        raise Exception(f"Could not find variable named {repr(name)}")
 
     def enter_scope(self):
         self.env.append(dict())
@@ -231,7 +235,7 @@ class Node:
         if self.type == NodeType.Assignment:
             name = self.value[0]
             value = self.value[1].interpret(execution_environment)
-            execution_environment.set_value(name, value)
+            execution_environment.set_variable(name, value)
             return value
 
         if self.type == NodeType.FunctionCall:
@@ -240,7 +244,7 @@ class Node:
                 value.interpret(execution_environment)
                 for value in self.value[1]
             ]
-            func = execution_environment.get_value(func_name).value
+            func = execution_environment.get_variable(func_name).value
             if func["type"] == FunctionType.External:
                 func_body = func["body"]
                 func_arg_names = [name for (name, type) in func["arg_names"]]
@@ -248,7 +252,7 @@ class Node:
                     if len(func_arg_names) != len(func_arg_values):
                         raise Exception
                     for i in range(len(func_arg_names)):
-                        execution_environment.set_value(func_arg_names[i],
+                        execution_environment.define_variable(func_arg_names[i],
                                                         func_arg_values[i])
                     try:
                         func_body.interpret(execution_environment)
@@ -282,10 +286,10 @@ class Node:
 
         if self.type == NodeType.Identifier:
             name = self.value
-            return execution_environment.get_value(name)
+            return execution_environment.get_variable(name)
 
         if self.type == NodeType.Function:
-            execution_environment.set_value(self.value["name"], self)
+            execution_environment.define_variable(self.value["name"], self)
             return self
 
         if self.type in [NodeType.String, NodeType.Number, NodeType.List]:

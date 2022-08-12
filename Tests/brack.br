@@ -1,0 +1,10 @@
+START
+
+cl Example{
+    fn init{x}{
+        own.x = x
+        -> x
+    }
+}
+
+END
