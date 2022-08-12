@@ -545,9 +545,15 @@ class File:
             len(things) >= o + 2
             and things[o + 0].type == NodeType.PrefixOperator
             and things[o + 0].value == "°"
-            and things[1].type == NodeType.Assignment
+            and things[o + 1].type == NodeType.Assignment
         ):
-            return Node(NodeType.DeclarationAssignment, things[1].value)
+            return (
+                things[:o]
+                + [Node(NodeType.DeclarationAssignment, things[1].value)]
+                + things[(o + 3) :],
+                True,
+            )
+        return things, False
 
     def repeatedly_transform_thing_list(self, things):
         # The order of this list is important because it dictates the precedence of different types of expressions
@@ -937,7 +943,7 @@ class File:
 
 
 def main(filename):
-    with open(filename, "rt") as f:
+    with open(filename, "rt", encoding="utf-8") as f:
         contents = f.read()
     file = File(contents)
     root_node = file.parse()
@@ -946,6 +952,7 @@ def main(filename):
     print("")
     print("Interpreting...")
     root_node.interpret(ExecutionEnvironment())
+
     print("")
 
 
@@ -953,6 +960,7 @@ tests = []
 tests += ["assignment", "scope_test", "comments", "functions"]
 # tests += ["if_test"]
 tests += ["type_assignment"]
+tests += ["declarations"]
 # tests += ["dot"]
 
 for test in tests:
