@@ -297,6 +297,10 @@ class Node:
 
         if self.type == NodeType.Class:
             class_name = self.value[0]
+            class_functions = [
+                value.interpret(execution_environment) for value in self.value[1]
+            ]
+            class_ = execution_environment.get_variable(class_name).value
 
         if self.type == NodeType.PrefixOperation:
             op = self.value[0]
