@@ -573,12 +573,14 @@ class File:
         # The order of this list is important because it dictates the precedence of different types of expressions
         recognize_list = [
             self.recognize_function_call,
-            self.recognize_postfix_operation,  # If you write `x!` or `x?`, you probably always expect that to be parsed before any expression that it's part of
+            self.recognize_postfix_operation,
+            # If you write `x!` or `x?`, you probably always expect that to be parsed before any expression that it's part of
             self.recognize_infix_operation,
             self.recognize_conditional_expression,
             self.recognize_assignment,
             self.recognize_declaration_assignment,
-            self.recognize_prefix_operation,  # `-> <expr>` is a PrefixOperation and you always want to keep the whole `<expr>` together
+            self.recognize_prefix_operation
+            # `-> <expr>` is a PrefixOperation and you always want to keep the whole `<expr>` together
         ]
         i = 0
         while i < len(recognize_list):
@@ -888,6 +890,33 @@ class File:
     def parse_colon(self):
         self.position += 1
         return Node(NodeType.Colon, ":")
+
+    def is_class(self):
+        return self.slice(2) == "cl"
+
+    def parse_class_keyword(self):
+        if self.slice(2) != "cl":
+            raise Exception
+        self.position += 2
+
+    def parse_class_name(self):
+        if not self.is_identifier():
+            raise Exception
+        return self.parse_identifier().value
+
+    def parse_class(self):
+        self.parse_class_keyword()
+        self.skip_useless()
+        name = self.parse_class_name()
+        self.skip_useless()
+        functions = []
+        self.parse_opening_curly()
+        while not self.is_closing_curly():
+            self.parse_function()
+        self.parse_closing_curly()
+        self.skip_useless()
+
+        return Node(NodeType.Class, {"name": name, "function_names": functions})
 
     def is_function(self):
         return self.slice(2) == "fn"
