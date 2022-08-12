@@ -50,11 +50,11 @@ Types:
 Indices:
     {x;y;z}: Intervall from x to y with steps of z
 
-Operators:
+Operators (more or less):
 
     Prefix operators:
       -> : return
-      ° : (Unicode???)
+      ° : declaration of variables (without type assignment)
 
     Infix operators:
       = : =
@@ -102,6 +102,3 @@ Classes and functions:
     fn <function>{args}{
         ...
     }
-
-
-['.', '^', '=', '%', '/', '//', '*', '**', '-']
