@@ -1,0 +1,107 @@
+BRACKETLESS 1.0.0 Syntax
+
+Comments:
+    Single-line comment: §<comment>
+    Multi-line comment: §§§<comment>§§§
+
+Internal Functions:
+    #drucke{<object>} : print in console
+    #istype{<object>} : returns type of object
+    #length{<iterable>} : returns length of object
+    #rev{<iterable>} : returns reversed iterable object
+
+    Type functions:
+      #int{<SupportsInt>, <TypeOfSupportsInt>} : converts a value into an integer
+          TypeOfSupportsInt: {"bin", "float", "hex", "int", "oct", "'<SupportsInt>'"}
+          (standard value: "float")
+      #str{<SupportsStr>} : converts a value into a string
+      #oct{<SupportsInt>, <TypeOfSupportsInt>} : converts something into an octal number
+      #hex{<SupportsInt>, <TypeOfSupportsInt>} : converts something into a hexadecimal number
+      #bin{<SupportsInt>, <TypeOfSupportsInt>} : converts something into a binary number
+      #float{<SupportsInt>, <TypeOfSupportsInt>} : converts something into a float number
+      #list{<iterable>} : converts an iterable object into a list
+      #dict{<HasKeyAndItem>} : converts an object with key and item into a dictionary
+
+Statements:
+
+    Conditional statements: if <condition> {} ... elif <condition> {} ... else {}
+    For-Loop: for <variable> : <iterable> {}
+    While-Loop: while <condition> {}
+    Unless-Loop: unless <condition> {}
+  
+    Start and end of Source code: START <source code> END
+        Anything written before START and after END will be ignored
+
+Types:
+    String: "<string>" ... #istype{<string>} -> "str"
+    Format String: "'<expression'" ... #istype{<format string>} -> "str"
+    Integer: 0...9 ... #istype{<integer>} -> "int"
+    Float: <integer>.x ... #istype{<float>} -> "float"
+    List: {<element>, <element>} ... #istype{<list>} -> "list"
+    Dictionary: {<key>: <value>} ... #istype{<dictionary> -> "dict"
+    Complex Number: {<real number> + <imaginary number>} ... #istype{<complex number>} -> "complex"
+    Binary Number: 0b<binary> ... #istype{<binary number>} -> "bin"
+    Hexadecimal Number: 0x<hexadecimal> ... #istype{<hexadecimal number>} -> "hex"
+    Octal Number: 0o<octal number> ... #istype{<octal number>} -> "oct"
+    Boolean: true/false ... #istype{<boolean value>} -> "bool"
+
+    NO TUPLES OR ARRAYS ARE EXISTING IN BRACKETLESS
+
+Indices:
+    {x;y;z}: Intervall from x to y with steps of z
+
+Operators:
+
+    Prefix operators:
+      -> : return
+      ° : (Unicode???)
+
+    Infix operators:
+      = : =
+      + : +
+      - : -
+      * : *
+      / : /
+      x ^ y : x ** y
+      x // y : xth root of y
+      += : +=
+      -= : -=
+      *= : *=
+      /= : /=
+      %= : %=
+      x ^= y : x **= y
+      x //= y : x = x // y
+      % : %
+      x . y{z} : x{y{z}}
+      & : and
+  
+      > : >
+      < : <
+      >= : >=
+      <= : <=
+      == : ==
+
+    Postfix operators:
+      x! : factorial of x
+      x? : reversed factorial of x
+
+Classes and functions:
+
+    cl <class>{
+        fn init{<optional args>}{
+            own.<variable> = <argument>
+        }
+
+        fn <function>{<optional args>}{
+            <variable> = own.<variable>
+        }
+    }
+
+    These are just examples, which are meant to demonstrate that, unlike in Python, you do not            need to write fn xyz{own}
+
+    fn <function>{args}{
+        ...
+    }
+
+
+['.', '^', '=', '%', '/', '//', '*', '**', '-']

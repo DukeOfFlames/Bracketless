@@ -1,0 +1,7 @@
+START
+a = "Hi (with Double Quotes)"
+b = a
+c = 'Hi (with Single Quotes)'
+d = c
+e = {f = 1}
+END

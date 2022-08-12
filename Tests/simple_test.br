@@ -1,0 +1,11 @@
+START
+
+b = "Hi"
+a = b
+
+if
+
+END
+
+Problem: Nach END ist vorbei, aber der versucht alles vor START zu parsen
+Weiteres Problem: Kommentare enden immer in einer Exception

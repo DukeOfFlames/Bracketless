@@ -1,0 +1,9 @@
+START
+a = 3
+fn square {x:int}
+{
+    res = x * x
+    -> res
+}
+b = square{a}
+END

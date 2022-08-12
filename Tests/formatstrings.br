@@ -1,0 +1,17 @@
+START
+
+l = {1, 2, 3}
+fn iterate{_list}{
+    res = ""
+
+    for i : _list{
+        res += "'i'"
+    }
+
+    #drucke{res}
+
+}
+
+iterate{l}
+
+END

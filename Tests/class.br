@@ -1,0 +1,22 @@
+START
+
+x = 12
+
+cl Example{
+    fn init{value}{
+        own.value = value
+        -> own.sum{value}
+    }
+
+    fn sum{}{
+        ex = 0
+        for i : own.value{
+          ex += 1
+        }
+        -> ex
+    }
+}
+
+#drucke{Example{x}}
+
+END
