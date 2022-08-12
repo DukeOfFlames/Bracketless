@@ -357,7 +357,6 @@ class File:
         self.prefix_operators = ['->', '°']
 
         self.separators = ';:.'
-        self.prefixes = '#'
         self.pos1 = 0  # for saving positions
 
     def get(self):
