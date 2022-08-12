@@ -17,3 +17,7 @@ def skip():
 
 while not is_start():
   skip()
+
+lib xyz -> Bracketless library
+pylib xyz -> Python library
+
