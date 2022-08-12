@@ -295,7 +295,7 @@ class Node:
             f"Could not interpret Node of type {NodeType.string(self.type)}")
 
 
-class Error(Exception):  #TODO: Implement in own language
+class Error(Exception):  # TODO: Implement in own language
     def __init__(self, error_name, details):
         self.error_name = error_name
         self.details = details
