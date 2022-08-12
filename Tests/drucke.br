@@ -1,4 +1,0 @@
-START
-str = "Hello World"
-drucke{str{;-1}}
-END
