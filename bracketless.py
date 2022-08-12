@@ -67,6 +67,7 @@ class NodeType:
     Colon = 27
     Type = 28
     InternalFunction = 29
+    DeclarationAssignment = 30
 
     def string(node_type):
         return {
@@ -98,7 +99,8 @@ class NodeType:
             NodeType.InfixOperation: "InfixOperation",
             NodeType.Colon: "Colon",
             NodeType.Type: "Type",
-            NodeType.InternalFunction: "InternalFunction"
+            NodeType.InternalFunction: "InternalFunction",
+            NodeType.DeclarationAssignment: "DeclarationAssignment"
         }[node_type]
 
     def is_expression(node_type):
@@ -108,7 +110,7 @@ class NodeType:
             NodeType.ConditionalExpression, NodeType.Function, NodeType.Class,
             NodeType.Boolean, NodeType.FunctionCall, NodeType.PrefixOperation,
             NodeType.PostfixOperation, NodeType.InfixOperation,
-            NodeType.InternalFunction
+            NodeType.InternalFunction, NodeType.DeclarationAssignment
         ]
 
 
@@ -308,7 +310,7 @@ class File:
         self.position = 0
         self.line_counter = 0
         self.column_counter = 0
-        self.prefix_operators = ['->']
+        self.prefix_operators = ['->', '°']
 
         self.separators = ';:.'
         self.prefixes = '#'
@@ -483,6 +485,11 @@ class File:
 
         return things, False
 
+    def recognize_declaration_assignment(self, things, o):
+        if len(things) >= o + 2 and things[o + 0].type == NodeType.PrefixOperator and things[o + 0].value == '°' \
+                and things[1].type == NodeType.Assignment:
+            return Node(NodeType.DeclarationAssignment, things[1].value)
+
     def repeatedly_transform_thing_list(self, things):
         # The order of this list is important because it dictates the precedence of different types of expressions
         recognize_list = [
@@ -492,8 +499,8 @@ class File:
             self.recognize_infix_operation,
             self.recognize_conditional_expression,
             self.recognize_assignment,
-            self.
-            recognize_prefix_operation  # `-> <expr>` is a PrefixOperation and you always want to keep the whole `<expr>` together
+            self.recognize_declaration_assignment,
+            self.recognize_prefix_operation  # `-> <expr>` is a PrefixOperation and you always want to keep the whole `<expr>` together
         ]
         i = 0
         while i < len(recognize_list):
