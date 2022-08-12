@@ -1,0 +1,19 @@
+#x                  : Internal function (#drucke{}, #rev{}, etc)
+;                   : separates indices ("Hi31"{0;-1;#length{"Hi31"}} = "Hi31")
+#length{_sequence}  : length of x -> "intelligent" length? x{0;#length} instead of x{0;#length{x}}?
+#rev{_sequence}     : reverses the given sequence (rev{"abc"} = "cba")
+//                  : square_root (as equivalent to **) (FLOOR DIVISION IS USELESS)
+if (x or y) == b    : replaces if x == b or y == b
+
+
+Possible types:
+#int{}, #float{}, #str{}, #complex{}, #dict{}, #list{}, #hex{}, #bin{}
+
+
+def skip():
+  self.position += 1
+
+...
+
+while not is_start():
+  skip()

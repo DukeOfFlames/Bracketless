@@ -1,0 +1,5 @@
+START
+if true {
+    a = 5
+}
+END

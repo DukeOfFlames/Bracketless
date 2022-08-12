@@ -1,0 +1,9 @@
+START
+
+fn a{}{
+  -> "b"
+}
+
+#drucke{a{}}
+
+END

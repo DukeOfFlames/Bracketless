@@ -1,0 +1,15 @@
+START
+
+str = "SINEP"
+
+fn _sub1{x}:
+  -> x^2
+
+fn _sub2{x}:
+  -> x!
+
+operation = {_sub2{} . _sub1{x}}  § _sub2{_sub1{x}}
+
+#drucke{"'#rev{str}': 'operation'"}  § reverses "SINEP"
+
+END
