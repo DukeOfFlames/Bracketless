@@ -1,4 +1,5 @@
 START
-str = "Hello World"
-drucke{str{;-1}}
+°str = "Hello World"
+#drucke{str}
+§ #drucke{str{;-1}}
 END

@@ -257,6 +257,12 @@ class Node:
             execution_environment.set_variable(name, value)
             return value
 
+        if self.type == NodeType.DeclarationAssignment:
+            name = self.value[0]
+            value = self.value[1].interpret(execution_environment)
+            execution_environment.define_variable(name, value)
+            return value
+
         if self.type == NodeType.FunctionCall:
             func_expr = self.value[0]
             if type(self.value[1]) == Node:
@@ -1054,6 +1060,7 @@ tests = []
 # tests += ["declarations"]
 # tests += ["dot"]
 tests += ["brack"]
+tests += ["drucke"]
 
 for test in tests:
     print(f"Running test: {test}")
