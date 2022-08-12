@@ -8,6 +8,7 @@ global = "I am a global variable"
         a_2 = 2
         {
             a_3 = 3
+            a_3
         }
         a_2 = 4
     }
@@ -18,12 +19,14 @@ global = "I am a global variable"
     b = 1
     {
         b = 2
+        b
     }
     b = 3
 }
 
 {
     l = {1, 2, 3}
+    l
 }
 
 END

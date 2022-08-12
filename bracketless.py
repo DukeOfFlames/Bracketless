@@ -66,7 +66,7 @@ class NodeType:
     InfixOperation = 26
     Colon = 27
     Type = 28
-    InternalFunction = 29
+    #InternalFunction = 29
     DeclarationAssignment = 30
 
     def string(node_type):
@@ -99,7 +99,6 @@ class NodeType:
             NodeType.InfixOperation: "InfixOperation",
             NodeType.Colon: "Colon",
             NodeType.Type: "Type",
-            NodeType.InternalFunction: "InternalFunction",
             NodeType.DeclarationAssignment: "DeclarationAssignment"
         }[node_type]
 
@@ -110,7 +109,7 @@ class NodeType:
             NodeType.ConditionalExpression, NodeType.Function, NodeType.Class,
             NodeType.Boolean, NodeType.FunctionCall, NodeType.PrefixOperation,
             NodeType.PostfixOperation, NodeType.InfixOperation,
-            NodeType.InternalFunction, NodeType.DeclarationAssignment
+            NodeType.DeclarationAssignment
         ]
 
 
@@ -240,12 +239,19 @@ class Node:
             return value
 
         if self.type == NodeType.FunctionCall:
-            func_name = self.value[0]
+            func_expr = self.value[0]
+            if type(self.value[1]) == Node:
+                print("!!!")
+                print(self)
+                raise Exception
             func_arg_values = [
                 value.interpret(execution_environment)
                 for value in self.value[1]
             ]
-            func = execution_environment.get_variable(func_name).value
+            func = func_expr.interpret(execution_environment)
+            if not func.type == NodeType.Function:
+                raise Exception(f"Cannot interpret FunctionCall because {func} is not a function")
+            func = func.value
             if func["type"] == FunctionType.External:
                 func_body = func["body"]
                 func_arg_names = [name for (name, type) in func["arg_names"]]
@@ -262,8 +268,9 @@ class Node:
                     else:
                         raise Exception("Function body did not return any value")
                 return return_value
-            elif func[0] == FunctionType.Internal:
-                ...
+            elif func["type"] == FunctionType.Internal:
+                func_body = func["body"]
+                return func_body(execution_environment, func_arg_values)
             else:
                 raise Exception
 
@@ -282,11 +289,20 @@ class Node:
             lhs = self.value[0].interpret(execution_environment)
             op = self.value[1]
             rhs = self.value[2].interpret(execution_environment)
-            if op == '*':
+            if op in ['+', '*']:
                 if lhs.type == NodeType.Number and rhs.type == NodeType.Number:
-                    return Node(NodeType.Number, lhs.value * rhs.value)
+                    return Node(NodeType.Number, {'+': (lambda x, y: x + y), '*': (lambda x, y: x * y)}[op](lhs.value, rhs.value))
+            if op == '.':
+                if lhs.type == NodeType.Function and rhs.type == NodeType.Function:
+                    def combined_func(execution_environment, params):
+                        if len(params) != 1:
+                            raise Exception
+                        param = params[0]
+                        with execution_environment:
+                            return Node(NodeType.FunctionCall, (lhs, [Node(NodeType.FunctionCall, (rhs, [param]))])).interpret(execution_environment)
+                    return Node(NodeType.Function, {"type": FunctionType.Internal, "body": combined_func})
             raise Exception(
-                f"Could not interpret InfixOperation with {self.value}")
+                f"Could not interpret InfixOperation with ({lhs}, {op}, {rhs})")
 
         if self.type == NodeType.Identifier:
             name = self.value
@@ -447,18 +463,18 @@ class File:
     def recognize_function_call(self, things, o):
         if len(things) >= o + 2 and \
                 (
-                        things[o + 0].type == NodeType.Identifier \
+                        NodeType.is_expression(things[o + 0].type) \
                         and things[o + 1].type == NodeType.Block \
                         and len(things[o + 1].value) == 1
                 ):
-            func_name = things[o + 0].value
+            func_expr = things[o + 0]
             func_args = things[o + 1].value[0]
             if func_args.type != NodeType.List:
                 func_args = [func_args]
             else:
                 func_args = func_args.value
             return things[:o] + [
-                Node(NodeType.FunctionCall, (func_name, func_args))
+                Node(NodeType.FunctionCall, (func_expr, func_args))
             ] + things[(o + 2):], True
 
         return things, False
