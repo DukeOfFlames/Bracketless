@@ -1,4 +1,6 @@
 START
-°n = 6!
-#drucke{n}
+#drucke{6!}
+#drucke{{6!}?}
+#drucke{{{6!}+{7!}}/2}
+#drucke{{{{6!}+{7!}}/2}?}
 END
