@@ -38,24 +38,37 @@ def factorial(n):
         return 1
     else:
         return n * factorial(n - 1)
-        
-def stirling_approximation(f):
+
+#https://www.desmos.com/calculator/3y4mi46f1j
+#https://oeis.org/A030169
+def factorial_approximation(f):
+    if f > 1:
+        return f * factorial_approximation(f - 1)
+    else:
+        p_x = 0.461632144968362341262659542325721328468196204006446351295988409
+        p_y = 0.1143968055891112997211840994174112667920484663300965511287998341
+        a = - p_y * (2 * p_x - 1) / ((p_x**2 - p_x)**2)
+        b = (2 * p_x - 3 * p_x**2) / (2 * p_x - 1)
+        res = f * (f - 1) * (a * (f + b))
+        return 1 - res
+    """
     return (2 * math.pi * f)**(1/2) * (f / math.e)**f
+    """
     
-def inverse_stirling_approximation(f):
+def inverse_factorial_approximation(f):
     pow = 0
-    while stirling_approximation(2**pow) < f:
+    while factorial_approximation(2**pow) < f:
         pow += 1
     pow -= 1
     res = 2**pow
     while res + 2**pow != res: #while `2**pow` still has an effect when added to `res`
-        while stirling_approximation(res + 2**pow) < f:
+        while factorial_approximation(res + 2**pow) < f:
             res += 2**pow
         pow -= 1
     return res
         
 def inverse_factorial(f):
-    return inverse_stirling_approximation(f)
+    return inverse_factorial_approximation(f)
 
 
 language_name = 'Bracketless'
