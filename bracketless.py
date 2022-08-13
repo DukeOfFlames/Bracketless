@@ -27,6 +27,7 @@
 
 import string
 import sys
+import math
 
 
 def flatten_list(lst):
@@ -38,6 +39,29 @@ def factorial(n):
         return 1
     else:
         return n * factorial(n - 1)
+
+
+def stirling_approximation(f):
+    return (2 * math.pi * f) ** (1 / 2) * (f / math.e) ** f
+
+
+def inverse_stirling_approximation(f):
+    pow = 0
+    while stirling_approximation(2**pow) < f:
+        pow += 1
+    pow -= 1
+    res = 2**pow
+    while (
+        res + 2**pow != res
+    ):  # while `2**pow` still has an effect when added to `res`
+        while stirling_approximation(res + 2**pow) < f:
+            res += 2**pow
+        pow -= 1
+    return res
+
+
+def inverse_factorial(f):
+    return inverse_stirling_approximation(f)
 
 
 language_name = "Bracketless"
@@ -76,6 +100,7 @@ class NodeType:
     # InternalFunction = 29
     DeclarationAssignment = 30
     BuiltinIdentifier = 31
+    Float = 32
 
     def string(node_type):
         return {
@@ -108,6 +133,7 @@ class NodeType:
             NodeType.Type: "Type",
             NodeType.DeclarationAssignment: "DeclarationAssignment",
             NodeType.BuiltinIdentifier: "BuiltinIdentifier",
+            NodeType.Float: "Float",
         }[node_type]
 
     def is_expression(node_type):
@@ -128,6 +154,7 @@ class NodeType:
             NodeType.InfixOperation,
             NodeType.DeclarationAssignment,
             NodeType.BuiltinIdentifier,
+            NodeType.Float,
         ]
 
 
@@ -245,6 +272,13 @@ class Node:
     def __repr__(self):
         return f"{self:s}"
 
+    def convert_to_float(self):
+        if self.type == NodeType.Float:
+            return self
+        if self.type == NodeType.Integer:
+            return Node(NodeType.Float, self.value)
+        return None
+
     def interpret(self, execution_environment):
 
         # execution_environment.print()
@@ -330,6 +364,10 @@ class Node:
             if op == "!":
                 if v.type == NodeType.Integer:
                     return Node(NodeType.Integer, factorial(v.value))
+            if op == "?":
+                v_as_float = v.convert_to_float()
+                if v_as_float != None:
+                    return Node(NodeType.Float, inverse_factorial(v_as_float.value))
             raise Exception(f"Could not interpret PostfixOperation with {self.value}")
 
         if self.type == NodeType.InfixOperation:
@@ -344,6 +382,11 @@ class Node:
                             lhs.value, rhs.value
                         ),
                     )
+            if op == "/":
+                lhs_as_float = lhs.convert_to_float()
+                rhs_as_float = rhs.convert_to_float()
+                if lhs_as_float != None and rhs_as_float != None:
+                    return Node(NodeType.Float, lhs_as_float.value / rhs_as_float.value)
             if op == ".":
                 if lhs.type == NodeType.Function and rhs.type == NodeType.Function:
 
