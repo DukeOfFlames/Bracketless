@@ -44,7 +44,7 @@ language_name = 'Bracketless'
 
 class NodeType:
     Identifier = 0
-    Number = 1
+    Integer = 1
     PostfixOperator = 2
     InfixOperator = 3
     OpeningCurly = 4
@@ -79,7 +79,7 @@ class NodeType:
     def string(node_type):
         return {
             NodeType.Identifier: "Identifier",
-            NodeType.Number: "Number",
+            NodeType.Integer: "Integer",
             NodeType.PostfixOperator: "PostfixOperator",
             NodeType.InfixOperator: "InfixOperator",
             NodeType.OpeningCurly: "OpeningCurly",
@@ -111,7 +111,7 @@ class NodeType:
 
     def is_expression(node_type):
         return node_type in [
-            NodeType.Identifier, NodeType.Number, NodeType.Block,
+            NodeType.Identifier, NodeType.Integer, NodeType.Block,
             NodeType.List, NodeType.Assignment, NodeType.String,
             NodeType.ConditionalExpression, NodeType.Function, NodeType.Class,
             NodeType.Boolean, NodeType.FunctionCall, NodeType.PrefixOperation,
@@ -308,8 +308,8 @@ class Node:
             v = self.value[0].interpret(execution_environment)
             op = self.value[1]
             if op == '!':
-                if v.type == NodeType.Number:
-                    return Node(NodeType.Number, factorial(v.value))
+                if v.type == NodeType.Integer:
+                    return Node(NodeType.Integer, factorial(v.value))
             raise Exception(f"Could not interpret PostfixOperation with {self.value}")
 
         if self.type == NodeType.InfixOperation:
@@ -317,8 +317,8 @@ class Node:
             op = self.value[1]
             rhs = self.value[2].interpret(execution_environment)
             if op in ['+', '*']:
-                if lhs.type == NodeType.Number and rhs.type == NodeType.Number:
-                    return Node(NodeType.Number, {'+': (lambda x, y: x + y), '*': (lambda x, y: x * y)}[op](lhs.value, rhs.value))
+                if lhs.type == NodeType.Integer and rhs.type == NodeType.Integer:
+                    return Node(NodeType.Integer, {'+': (lambda x, y: x + y), '*': (lambda x, y: x * y)}[op](lhs.value, rhs.value))
             if op == '.':
                 if lhs.type == NodeType.Function and rhs.type == NodeType.Function:
                     def combined_func(execution_environment, params):
@@ -343,7 +343,7 @@ class Node:
             execution_environment.define_variable(self.value["name"], self)
             return self
 
-        if self.type in [NodeType.String, NodeType.Number, NodeType.List]:
+        if self.type in [NodeType.String, NodeType.Integer, NodeType.List]:
             return self
 
         raise Exception(
@@ -477,11 +477,11 @@ class File:
                 (
                         (
                                 things[o + 0].type == NodeType.Statement \
-                                and things[o + 1].type in [NodeType.Identifier, NodeType.String, NodeType.Number,
+                                and things[o + 1].type in [NodeType.Identifier, NodeType.String, NodeType.Integer,
                                                            NodeType.List, NodeType.Function] \
                                 and things[o + 2].type == NodeType.InfixOperator \
                                 and not things[o + 2].value in ['==', '<', '>', '>=', '<=', '%'] \
-                                and things[o + 3].type in [NodeType.Identifier, NodeType.String, NodeType.Number,
+                                and things[o + 3].type in [NodeType.Identifier, NodeType.String, NodeType.Integer,
                                                            NodeType.List, NodeType.Function]
 
                         ) \
@@ -692,7 +692,7 @@ class File:
             (self.is_end, self.parse_end), (self.is_string, self.parse_string),
             (self.is_statement, self.parse_statement),
             (self.is_identifier, self.parse_identifier),
-            (self.is_number, self.parse_number),
+            (self.is_integer, self.parse_integer),
             (self.is_prefix_operator, self.parse_prefix_operator),
             (self.is_postfix_operator, self.parse_postfix_operator),
             (self.is_infix_operator, self.parse_infix_operator),
@@ -721,19 +721,19 @@ class File:
             self.position += 1
         return Node(NodeType.Identifier, identifier)
 
-    def is_number(self):
+    def is_integer(self):
         return self.get() in string.digits
 
     def return_string(self):
         return Node(NodeType.String, self.string)
 
-    def parse_number(self):
-        number = 0
+    def parse_integer(self):
+        integer = 0
         while self.get() in string.digits:
-            number *= 10
-            number += int(self.get())
+            integer *= 10
+            integer += int(self.get())
             self.position += 1
-        return Node(NodeType.Number, number)
+        return Node(NodeType.Integer, integer)
 
     def is_postfix_operator(self):
         return self.get() in ['!', '?']
