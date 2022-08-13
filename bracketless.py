@@ -31,6 +31,12 @@ import sys
 
 def flatten_list(lst):
     return [inner for outer in lst for inner in outer]
+    
+def factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorial(n - 1)
 
 
 language_name = 'Bracketless'
@@ -297,6 +303,14 @@ class Node:
                 raise Return(v)
             raise Exception(
                 f"Could not interpret PrefixOperation with {self.value}")
+                
+        if self.type == NodeType.PostfixOperation:
+            v = self.value[0].interpret(execution_environment)
+            op = self.value[1]
+            if op == '!':
+                if v.type == NodeType.Number:
+                    return Node(NodeType.Number, factorial(v.value))
+            raise Exception(f"Could not interpret PostfixOperation with {self.value}")
 
         if self.type == NodeType.InfixOperation:
             lhs = self.value[0].interpret(execution_environment)
@@ -949,6 +963,7 @@ tests = []
 # tests += ["type_assignment"]
 # tests += ["declarations"]
 # tests += ["dot"]
+tests += ["factorial"]
 tests += ["brack"]
 tests += ["drucke"]
 
