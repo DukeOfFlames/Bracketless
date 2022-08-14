@@ -1,0 +1,18 @@
+START
+°max = {1, 2, 3}
+
+cl Max{
+    fn init{max}{
+        own.max = max
+    }
+
+    fn max{}{
+        -> #max{own.max}
+    }
+}
+
+max = Max.max{max}
+drucke = #max{max, max, max}
+
+#drucke{drucke}
+END
