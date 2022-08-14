@@ -1086,7 +1086,7 @@ class File:
         self.position += 6
 
     def parse_error_keyword(self):
-        self.errors = ["Exception"]
+        self.errors = ["Exception", "CommittedDeadlySinError"]
         lens = []
 
         for error in self.errors:
