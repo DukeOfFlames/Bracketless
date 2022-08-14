@@ -112,6 +112,7 @@ class NodeType:
     DeclarationAssignment = 30
     BuiltinIdentifier = 31
     Float = 32
+    ForLoopExpression = 33
 
     def string(node_type):
         return {
@@ -145,6 +146,7 @@ class NodeType:
             NodeType.DeclarationAssignment: "DeclarationAssignment",
             NodeType.BuiltinIdentifier: "BuiltinIdentifier",
             NodeType.Float: "Float"
+            NodeType.ForLoopExpression: "ForLoopExpression"
         }[node_type]
 
     def is_expression(node_type):
@@ -157,6 +159,11 @@ class NodeType:
             NodeType.DeclarationAssignment,
             NodeType.BuiltinIdentifier,
             NodeType.Float
+        ]
+
+    def is_iterable(node_type):
+        return node_type in [
+            NodeType.String, NodeType.List
         ]
 
 
@@ -527,6 +534,17 @@ class File:
 
         return things, False
 
+    def recognize_for_loop_expression(self, things, o):
+        if len(things) >= o + 4 and things[o + 1].type == NodeType.Identifier \
+                and things[o + 2].type == NodeType.InfixOperator and things[o + 2].value == ':' \
+                and NodeType.is_iterable(things[o + 3].type):
+            return things[:o] + [
+                Node(NodeType.ForLoopExpression, (things[o+1].value, things[o+3].value))
+            ], True
+
+        else:
+            return things, False
+
     def recognize_conditional_expression(self, things, o):
         if len(things) >= o + 4 and \
                 (
@@ -627,7 +645,8 @@ class File:
             self.recognize_conditional_expression,
             self.recognize_assignment,
             self.recognize_declaration_assignment,
-            self.recognize_prefix_operation
+            self.recognize_prefix_operation,
+            self.recognize_for_loop_expression
             # `-> <expr>` is a PrefixOperation and you always want to keep the whole `<expr>` together
         ]
         i = 0
@@ -799,24 +818,24 @@ class File:
         return Node(NodeType.PostfixOperator, c)
 
     def is_infix_operator(self):
-        if self.slice(3) == '//=':
+        if self.slice(3) in ['//=', 'and', 'not']:
             return True
         elif self.slice(2) in [
             '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
-            '<='
+            '<=', 'or'
         ]:
             return True
         elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.']:
             return True
 
     def parse_infix_operator(self):
-        if self.slice(3) == '//=':
+        if self.slice(3) in ['//=', 'and', 'not']:
             s = self.slice(3)
             self.position += 3
             return Node(NodeType.InfixOperator, s)
         elif self.slice(2) in [
             '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
-            '<='
+            '<=', 'or'
         ]:
             s = self.slice(2)
             self.position += 2
@@ -902,6 +921,54 @@ class File:
     def parse_colon(self):
         self.position += 1
         return Node(NodeType.Colon, ':')
+
+    def is_for_loop(self):
+        return self.slice(3) == 'for'
+
+    def parse_for_loop_var(self):
+        if not self.is_identifier():
+            raise Exception
+        return self.parse_identifier().value
+
+    def parse_for_loop_keyword(self):
+        if self.slice(3) != 'for':
+            raise Exception
+        self.position += 3
+
+    def parse_for(self):
+        self.parse_for_loop_keyword()
+        self.skip_useless()
+        var = self.parse_for_loop_var()
+        self.skip_useless()
+        self.parse_colon()
+        self.skip_useless()
+        if self.is_opening_curly():
+            iter_ = self.parse_block()
+            self.skip_useless()
+        elif self.is_string():
+            iter_ = self.parse_string()
+            self.skip_useless()
+        elif self.is_identifier():
+            iter_ = self.parse_identifier()
+            self.skip_useless()
+        elif self.is_function():
+            iter_ = self.parse_function()
+        self.parse_block()
+
+        return Node(NodeType.ForLoop, {'iterated_variable': var, 'iterable': iter_})
+
+    def is_if(self):
+        return self.slice(2) == 'if'
+
+    def parse_if_keyword(self):
+        if self.slice(2) != 'if':
+            raise Exception
+        self.position += 2
+
+    def parse_if(self):
+        self.parse_if()
+        self.skip_useless()
+        ...
 
     def is_class(self):
         return self.slice(2) == 'cl'
@@ -1021,6 +1088,7 @@ tests = []
 tests += ["factorial"]
 tests += ["brack"]
 tests += ["drucke"]
+tests += ["for_test"]
 
 for test in tests:
     print(f"Running test: {test}")
