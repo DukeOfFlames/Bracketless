@@ -1,0 +1,9 @@
+START
+try {
+    °a = 1
+}
+except Exception {
+    °a = 2
+}
+
+END

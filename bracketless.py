@@ -113,6 +113,7 @@ class NodeType:
     BuiltinIdentifier = 31
     Float = 32
     ForLoopExpression = 33
+    Try = 34
 
     def string(node_type):
         return {
@@ -145,8 +146,9 @@ class NodeType:
             NodeType.Type: "Type",
             NodeType.DeclarationAssignment: "DeclarationAssignment",
             NodeType.BuiltinIdentifier: "BuiltinIdentifier",
-            NodeType.Float: "Float"
-            NodeType.ForLoopExpression: "ForLoopExpression"
+            NodeType.Float: "Float",
+            NodeType.ForLoopExpression: "ForLoopExpression",
+            NodeType.Try: "Try"
         }[node_type]
 
     def is_expression(node_type):
@@ -445,6 +447,7 @@ class File:
 
         self.separators = ';:.'
         self.pos1 = 0  # for saving positions
+        self.virtpos = 0  # for simulating parse-progressions
 
     def get(self):
         return self.content[self.position]
@@ -764,6 +767,8 @@ class File:
             (self.is_start, self.parse_start),
             (self.is_function, self.parse_function),
             (self.is_end, self.parse_end), (self.is_string, self.parse_string),
+            (self.is_for_loop, self.parse_for),
+            (self.is_try, self.parse_try),
             (self.is_statement, self.parse_statement),
             (self.is_identifier, self.parse_identifier),
             (self.is_integer, self.parse_integer),
@@ -922,6 +927,46 @@ class File:
         self.position += 1
         return Node(NodeType.Colon, ':')
 
+    def is_try(self):
+        return self.slice(3) == 'try'
+
+    def parse_try_keyword(self):
+        if self.slice(3) != 'try':
+            raise Exception
+        self.position += 3
+
+    def parse_except_keyword(self):
+        if self.slice(6) != 'except':
+            raise Exception
+        self.position += 6
+
+    def parse_error_keyword(self):
+        self.errors = ['Exception']
+        lens = []
+
+        for error in self.errors:
+            lens.append(len(error))
+
+        for i in range(max(lens), 1, -1):
+            if self.slice(i) in self.errors:
+                err = self.slice(i)
+                self.position += i
+                return err
+
+    def parse_try(self):
+        self.parse_try_keyword()
+        self.skip_useless()
+        try_ = self.parse_block()
+        self.skip_useless()
+        self.parse_except_keyword()
+        self.skip_useless()
+        error = self.parse_error_keyword()
+        self.skip_useless()
+        except_ = self.parse_block()
+        self.skip_useless()
+
+        return Node(NodeType.Try, {"try_block": try_, "error": error, "except_block": except_})
+
     def is_for_loop(self):
         return self.slice(3) == 'for'
 
@@ -951,8 +996,6 @@ class File:
         elif self.is_identifier():
             iter_ = self.parse_identifier()
             self.skip_useless()
-        elif self.is_function():
-            iter_ = self.parse_function()
         self.parse_block()
 
         return Node(NodeType.ForLoop, {'iterated_variable': var, 'iterable': iter_})
@@ -1085,10 +1128,11 @@ tests = []
 # tests += ["type_assignment"]
 # tests += ["declarations"]
 # tests += ["dot"]
-tests += ["factorial"]
-tests += ["brack"]
-tests += ["drucke"]
+# tests += ["factorial"]
+# tests += ["brack"]
+# tests += ["drucke"]
 tests += ["for_test"]
+tests += ["try"]
 
 for test in tests:
     print(f"Running test: {test}")
