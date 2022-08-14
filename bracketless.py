@@ -32,31 +32,20 @@ import math
 
 def flatten_list(lst):
     return [inner for outer in lst for inner in outer]
-
-
+    
 def factorial(n):
     if n == 0:
         return 1
     else:
         return n * factorial(n - 1)
 
-
-# https://www.desmos.com/calculator/3y4mi46f1j
-# https://oeis.org/A030169
+#https://www.desmos.com/calculator/3y4mi46f1j
+#https://oeis.org/A030169
 def factorial_approximation(f):
     if f > 1:
         return f * factorial_approximation(f - 1)
     else:
-        coefs = [
-            1.0,
-            -0.5717359821489323,
-            0.9364531044181281,
-            -0.6892160181080689,
-            0.4597437410503836,
-            -0.15662271468032285,
-            0.016194354022299642,
-            0.005183515446512647,
-        ]
+        coefs = [1.0, -0.5717359821489323, 0.9364531044181281, -0.6892160181080689, 0.4597437410503836, -0.15662271468032285, 0.016194354022299642, 0.005183515446512647]
         return sum([coefs[exp] * f**exp for exp in range(len(coefs))])
         """
         p_x = 0.461632144968362341262659542325721328468196204006446351295988409
@@ -69,28 +58,24 @@ def factorial_approximation(f):
     """
     return (2 * math.pi * f)**(1/2) * (f / math.e)**f
     """
-
-
+    
 def inverse_factorial_approximation(f):
     pow = 0
     while factorial_approximation(2**pow) < f:
         pow += 1
     pow -= 1
     res = 2**pow
-    while (
-        res + 2**pow != res
-    ):  # while `2**pow` still has an effect when added to `res`
+    while res + 2**pow != res: #while `2**pow` still has an effect when added to `res`
         while factorial_approximation(res + 2**pow) < f:
             res += 2**pow
         pow -= 1
     return res
-
-
+        
 def inverse_factorial(f):
     return inverse_factorial_approximation(f)
 
 
-language_name = "Bracketless"
+language_name = 'Bracketless'
 
 
 class NodeType:
@@ -103,7 +88,7 @@ class NodeType:
     Start = 6
     End = 7
     Block = 8
-    # InternalFunctionPrefix = 9
+    #InternalFunctionPrefix = 9
     Comma = 10
     PrefixOperator = 11
     # Quote = 12
@@ -123,10 +108,11 @@ class NodeType:
     InfixOperation = 26
     Colon = 27
     Type = 28
-    # InternalFunction = 29
+    #InternalFunction = 29
     DeclarationAssignment = 30
     BuiltinIdentifier = 31
     Float = 32
+    ForLoopExpression = 33
 
     def string(node_type):
         return {
@@ -159,28 +145,25 @@ class NodeType:
             NodeType.Type: "Type",
             NodeType.DeclarationAssignment: "DeclarationAssignment",
             NodeType.BuiltinIdentifier: "BuiltinIdentifier",
-            NodeType.Float: "Float",
+            NodeType.Float: "Float"
+            NodeType.ForLoopExpression: "ForLoopExpression"
         }[node_type]
 
     def is_expression(node_type):
         return node_type in [
-            NodeType.Identifier,
-            NodeType.Integer,
-            NodeType.Block,
-            NodeType.List,
-            NodeType.Assignment,
-            NodeType.String,
-            NodeType.ConditionalExpression,
-            NodeType.Function,
-            NodeType.Class,
-            NodeType.Boolean,
-            NodeType.FunctionCall,
-            NodeType.PrefixOperation,
-            NodeType.PostfixOperation,
-            NodeType.InfixOperation,
+            NodeType.Identifier, NodeType.Integer, NodeType.Block,
+            NodeType.List, NodeType.Assignment, NodeType.String,
+            NodeType.ConditionalExpression, NodeType.Function, NodeType.Class,
+            NodeType.Boolean, NodeType.FunctionCall, NodeType.PrefixOperation,
+            NodeType.PostfixOperation, NodeType.InfixOperation,
             NodeType.DeclarationAssignment,
             NodeType.BuiltinIdentifier,
-            NodeType.Float,
+            NodeType.Float
+        ]
+
+    def is_iterable(node_type):
+        return node_type in [
+            NodeType.String, NodeType.List
         ]
 
 
@@ -201,7 +184,8 @@ class ExecutionEnvironment:
             print("  {")
             for (key, value) in scope.items():
                 print(f"    {key}:")
-                print("\n".join(["      " + line for line in repr(value).split("\n")]))
+                print('\n'.join(
+                    ["      " + line for line in repr(value).split('\n')]))
             print("  }")
         print("]")
 
@@ -254,50 +238,39 @@ class Node:
         if type(self.value) in [list, tuple]:
             inline_value_repr = "["
             outline_value_repr = [
-                (line, indentation + 4)
-                for (line, indentation) in flatten_list(
-                    [
-                        (
-                            elem.repr_as_list(short_toggle)
-                            if type(elem) == Node
-                            else [(repr(elem), 0)]
-                        )
-                        for elem in self.value
-                    ]
-                )
-            ] + [("]", 2)]
+                                     (line, indentation + 4)
+                                     for (line, indentation) in flatten_list([(
+                    elem.repr_as_list(short_toggle) if type(elem) ==
+                                                       Node else [(repr(elem), 0)]) for elem in self.value])
+                                 ] + [("]", 2)]
         else:
             inline_value_repr = repr(self.value)
             outline_value_repr = []
 
         if short_toggle:
-            return [
-                (f"{NodeType.string(self.type)}:", 0),
-                (f"{inline_value_repr}", 2),
-            ] + outline_value_repr
+            return [(f"{NodeType.string(self.type)}:", 0),
+                    (f"{inline_value_repr}", 2)] \
+                   + outline_value_repr
         else:
-            return [
-                ("Node:", 0),
-                (f"Type = {NodeType.string(self.type)}", 2),
-                (f"Value = {inline_value_repr}", 2),
-            ] + outline_value_repr
+            return [("Node:", 0),
+                    (f"Type = {NodeType.string(self.type)}", 2),
+                    (f"Value = {inline_value_repr}", 2)] \
+                   + outline_value_repr
 
     def __format__(self, spec):
         short_toggle = False
-        if spec == "s":
+        if spec == 's':
             short_toggle = True
-        if spec == "l":
+        if spec == 'l':
             short_toggle = False
-        return "\n".join(
-            [
-                " " * indentation + line
-                for (line, indentation) in self.repr_as_list(short_toggle)
-            ]
-        )
+        return '\n'.join([
+            ' ' * indentation + line
+            for (line, indentation) in self.repr_as_list(short_toggle)
+        ])
 
     def __repr__(self):
         return f"{self:s}"
-
+        
     def convert_to_float(self):
         if self.type == NodeType.Float:
             return self
@@ -325,7 +298,7 @@ class Node:
             value = self.value[1].interpret(execution_environment)
             execution_environment.set_variable(name, value)
             return value
-
+            
         if self.type == NodeType.DeclarationAssignment:
             name = self.value[0]
             value = self.value[1].interpret(execution_environment)
@@ -339,13 +312,12 @@ class Node:
                 print(self)
                 raise Exception
             func_arg_values = [
-                value.interpret(execution_environment) for value in self.value[1]
+                value.interpret(execution_environment)
+                for value in self.value[1]
             ]
             func = func_expr.interpret(execution_environment)
             if not func.type == NodeType.Function:
-                raise Exception(
-                    f"Cannot interpret FunctionCall because {func} is not a function"
-                )
+                raise Exception(f"Cannot interpret FunctionCall because {func} is not a function")
             func = func.value
             if func["type"] == FunctionType.External:
                 func_body = func["body"]
@@ -354,9 +326,8 @@ class Node:
                     if len(func_arg_names) != len(func_arg_values):
                         raise Exception
                     for i in range(len(func_arg_names)):
-                        execution_environment.define_variable(
-                            func_arg_names[i], func_arg_values[i]
-                        )
+                        execution_environment.define_variable(func_arg_names[i],
+                                                              func_arg_values[i])
                     try:
                         func_body.interpret(execution_environment)
                     except Return as r:
@@ -373,7 +344,8 @@ class Node:
         if self.type == NodeType.Class:
             class_name = self.value[0]
             class_functions = [
-                value.interpret(execution_environment) for value in self.value[1]
+                value.interpret(execution_environment)
+                for value in self.value[1]
             ]
             class_ = execution_environment.get_variable(class_name).value
 
@@ -382,15 +354,16 @@ class Node:
             v = self.value[1].interpret(execution_environment)
             if op == "->":
                 raise Return(v)
-            raise Exception(f"Could not interpret PrefixOperation with {self.value}")
-
+            raise Exception(
+                f"Could not interpret PrefixOperation with {self.value}")
+                
         if self.type == NodeType.PostfixOperation:
             v = self.value[0].interpret(execution_environment)
             op = self.value[1]
-            if op == "!":
+            if op == '!':
                 if v.type == NodeType.Integer:
                     return Node(NodeType.Integer, factorial(v.value))
-            if op == "?":
+            if op == '?':
                 v_as_float = v.convert_to_float()
                 if v_as_float != None:
                     return Node(NodeType.Float, inverse_factorial(v_as_float.value))
@@ -400,44 +373,30 @@ class Node:
             lhs = self.value[0].interpret(execution_environment)
             op = self.value[1]
             rhs = self.value[2].interpret(execution_environment)
-            if op in ["+", "*"]:
+            if op in ['+', '*']:
                 if lhs.type == NodeType.Integer and rhs.type == NodeType.Integer:
-                    return Node(
-                        NodeType.Integer,
-                        {"+": (lambda x, y: x + y), "*": (lambda x, y: x * y)}[op](
-                            lhs.value, rhs.value
-                        ),
-                    )
-            if op == "/":
+                    return Node(NodeType.Integer, {'+': (lambda x, y: x + y), '*': (lambda x, y: x * y)}[op](lhs.value, rhs.value))
+            if op == '/':
                 lhs_as_float = lhs.convert_to_float()
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
                     return Node(NodeType.Float, lhs_as_float.value / rhs_as_float.value)
-            if op == ".":
+            if op == '.':
                 if lhs.type == NodeType.Function and rhs.type == NodeType.Function:
-
                     def combined_func(execution_environment, params):
                         if len(params) != 1:
                             raise Exception
                         param = params[0]
                         with execution_environment:
-                            return Node(
-                                NodeType.FunctionCall,
-                                (lhs, [Node(NodeType.FunctionCall, (rhs, [param]))]),
-                            ).interpret(execution_environment)
-
-                    return Node(
-                        NodeType.Function,
-                        {"type": FunctionType.Internal, "body": combined_func},
-                    )
+                            return Node(NodeType.FunctionCall, (lhs, [Node(NodeType.FunctionCall, (rhs, [param]))])).interpret(execution_environment)
+                    return Node(NodeType.Function, {"type": FunctionType.Internal, "body": combined_func})
             raise Exception(
-                f"Could not interpret InfixOperation with ({lhs}, {op}, {rhs})"
-            )
+                f"Could not interpret InfixOperation with ({lhs}, {op}, {rhs})")
 
         if self.type == NodeType.Identifier:
             name = self.value
             return execution_environment.get_variable(name)
-
+            
         if self.type == NodeType.BuiltinIdentifier:
             name = self.value
             return Builtins.builtins[name]
@@ -450,19 +409,12 @@ class Node:
             return self
 
         raise Exception(
-            f"Could not interpret Node of type {NodeType.string(self.type)}"
-        )
-
-
+            f"Could not interpret Node of type {NodeType.string(self.type)}")
+            
 class Builtins:
     def drucke(execution_environment, params):
         print(params)
-
-    builtins = {
-        "drucke": Node(
-            NodeType.Function, {"type": FunctionType.Internal, "body": drucke}
-        )
-    }
+    builtins = {"drucke": Node(NodeType.Function, {"type": FunctionType.Internal, "body": drucke})}
 
 
 class Error(Exception):  # TODO: Implement in own language
@@ -473,15 +425,14 @@ class Error(Exception):  # TODO: Implement in own language
 
 class CommittedDeadlySinError(Error):
     def __init__(self, details):
-        super().__init__("You committed a deadly sin: ", details)
+        super().__init__('You committed a deadly sin: ', details)
 
 
 class WhereToStartError(Error):
     def __init__(self, details):
         self.details = details
-        super().__init__(
-            f"{language_name} does not know where to start: ", self.details
-        )  # Error: chars  @ x y IN file
+        super().__init__(f'{language_name} does not know where to start: ',
+                         self.details)  # Error: chars  @ x y IN file
 
 
 class File:
@@ -490,32 +441,32 @@ class File:
         self.position = 0
         self.line_counter = 0
         self.column_counter = 0
-        self.prefix_operators = ["->", "°"]
+        self.prefix_operators = ['->', '°']
 
-        self.separators = ";:."
+        self.separators = ';:.'
         self.pos1 = 0  # for saving positions
 
     def get(self):
         return self.content[self.position]
 
     def slice(self, length):
-        return self.content[self.position : (self.position + length)]
+        return self.content[self.position:(self.position + length)]
 
     def is_whitespace(self):
         return self.get() in string.whitespace
 
     def skip_whitespace(self):
         while self.is_whitespace():
-            if self.get() == "\n":
+            if self.get() == '\n':
                 self.line_counter += 1
             self.position += 1
 
     def is_singleline_comment(self):
-        return self.get() == "§"
+        return self.get() == '§'
 
     def skip_singleline_comment(self):
         self.position += 1
-        while self.get() != "\n":
+        while self.get() != '\n':
             self.position += 1
         self.position += 1
 
@@ -564,167 +515,138 @@ class File:
         return None
 
     def recognize_assignment(self, things, o):
-        if len(things) >= o + 2 and (
-            things[o + 0].type == NodeType.Identifier
-            and things[o + 1].type == NodeType.InfixOperator
-            and things[o + 1].value == "="
-        ):
+        if len(things) >= o + 2 and \
+                (
+                        things[o + 0].type == NodeType.Identifier \
+                        and things[o + 1].type == NodeType.InfixOperator \
+                        and things[o + 1].value == '='
+                ):
             if things[o + 2].value == '"':
-                return (
-                    things[:o]
-                    + [Node(NodeType.Assignment, (things[o + 0].value, things[o + 3]))]
-                    + things[(o + 4) :],
-                    True,
-                )
+                return things[:o] + [
+                    Node(NodeType.Assignment,
+                         (things[o + 0].value, things[o + 3]))
+                ] + things[(o + 4):], True
             else:
-                return (
-                    things[:o]
-                    + [Node(NodeType.Assignment, (things[o + 0].value, things[o + 2]))]
-                    + things[(o + 3) :],
-                    True,
-                )
+                return things[:o] + [
+                    Node(NodeType.Assignment,
+                         (things[o + 0].value, things[o + 2]))
+                ] + things[(o + 3):], True
 
         return things, False
 
+    def recognize_for_loop_expression(self, things, o):
+        if len(things) >= o + 4 and things[o + 1].type == NodeType.Identifier \
+                and things[o + 2].type == NodeType.InfixOperator and things[o + 2].value == ':' \
+                and NodeType.is_iterable(things[o + 3].type):
+            return things[:o] + [
+                Node(NodeType.ForLoopExpression, (things[o+1].value, things[o+3].value))
+            ], True
+
+        else:
+            return things, False
+
     def recognize_conditional_expression(self, things, o):
-        if len(things) >= o + 4 and (
-            (
-                things[o + 0].type == NodeType.Statement
-                and things[o + 1].type
-                in [
-                    NodeType.Identifier,
-                    NodeType.String,
-                    NodeType.Integer,
-                    NodeType.List,
-                    NodeType.Function,
-                ]
-                and things[o + 2].type == NodeType.InfixOperator
-                and not things[o + 2].value in ["==", "<", ">", ">=", "<=", "%"]
-                and things[o + 3].type
-                in [
-                    NodeType.Identifier,
-                    NodeType.String,
-                    NodeType.Integer,
-                    NodeType.List,
-                    NodeType.Function,
-                ]
-            )
-            or things[o + 1].type == NodeType.Boolean
-        ):
-            return (
-                things[:o]
-                + [
-                    Node(
-                        NodeType.ConditionalExpression,
-                        (things[o + 0].value, things[o + 1].value, things[o + 2].value),
-                    )
-                ]
-                + things[(o + 4) :],
-                True,
-            )
+        if len(things) >= o + 4 and \
+                (
+                        (
+                                things[o + 0].type == NodeType.Statement \
+                                and things[o + 1].type in [NodeType.Identifier, NodeType.String, NodeType.Integer,
+                                                           NodeType.List, NodeType.Function] \
+                                and things[o + 2].type == NodeType.InfixOperator \
+                                and not things[o + 2].value in ['==', '<', '>', '>=', '<=', '%'] \
+                                and things[o + 3].type in [NodeType.Identifier, NodeType.String, NodeType.Integer,
+                                                           NodeType.List, NodeType.Function]
+
+                        ) \
+                        or things[o + 1].type == NodeType.Boolean
+                ):
+            return things[:o] + [
+                Node(NodeType.ConditionalExpression,
+                     (things[o + 0].value, things[o + 1].value,
+                      things[o + 2].value))
+            ] + things[(o + 4):], True
 
         return things, False
 
     def recognize_function_call(self, things, o):
-        if len(things) >= o + 2 and (
-            NodeType.is_expression(things[o + 0].type)
-            and things[o + 1].type == NodeType.Block
-            and len(things[o + 1].value) == 1
-        ):
+        if len(things) >= o + 2 and \
+                (
+                        NodeType.is_expression(things[o + 0].type) \
+                        and things[o + 1].type == NodeType.Block \
+                        and len(things[o + 1].value) == 1
+                ):
             func_expr = things[o + 0]
             func_args = things[o + 1].value[0]
             if func_args.type != NodeType.List:
                 func_args = [func_args]
             else:
                 func_args = func_args.value
-            return (
-                things[:o]
-                + [Node(NodeType.FunctionCall, (func_expr, func_args))]
-                + things[(o + 2) :],
-                True,
-            )
+            return things[:o] + [
+                Node(NodeType.FunctionCall, (func_expr, func_args))
+            ] + things[(o + 2):], True
 
         return things, False
 
     def recognize_prefix_operation(self, things, o):
-        if len(things) >= o + 2 and (
-            things[o + 0].type == NodeType.PrefixOperator
-            and NodeType.is_expression(things[o + 1].type)
-        ):
-            return (
-                things[:o]
-                + [Node(NodeType.PrefixOperation, (things[o + 0].value, things[o + 1]))]
-                + things[(o + 2) :],
-                True,
-            )
+        if len(things) >= o + 2 and \
+                (
+                        things[o + 0].type == NodeType.PrefixOperator \
+                        and NodeType.is_expression(things[o + 1].type)
+                ):
+            return things[:o] + [
+                Node(NodeType.PrefixOperation,
+                     (things[o + 0].value, things[o + 1]))
+            ] + things[(o + 2):], True
 
         return things, False
 
     def recognize_postfix_operation(self, things, o):
-        if len(things) >= o + 2 and (
-            NodeType.is_expression(things[o + 0].type)
-            and things[o + 1].type == NodeType.PostfixOperator
-        ):
-            return (
-                things[:o]
-                + [
-                    Node(
-                        NodeType.PostfixOperation, (things[o + 0], things[o + 1].value)
-                    )
-                ]
-                + things[(o + 2) :],
-                True,
-            )
+        if len(things) >= o + 2 and \
+                (
+                        NodeType.is_expression(things[o + 0].type) \
+                        and things[o + 1].type == NodeType.PostfixOperator
+                ):
+            return things[:o] + [
+                Node(NodeType.PostfixOperation,
+                     (things[o + 0], things[o + 1].value))
+            ] + things[(o + 2):], True
 
         return things, False
 
     def recognize_infix_operation(self, things, o):
-        if len(things) >= o + 3 and (
-            NodeType.is_expression(things[o + 0].type)
-            and things[o + 1].type == NodeType.InfixOperator
-            and things[o + 1].value != "="
-            and NodeType.is_expression(things[o + 2].type)
-        ):
-            return (
-                things[:o]
-                + [
-                    Node(
-                        NodeType.InfixOperation,
-                        (things[o + 0], things[o + 1].value, things[o + 2]),
-                    )
-                ]
-                + things[(o + 3) :],
-                True,
-            )
+        if len(things) >= o + 3 and \
+                (
+                        NodeType.is_expression(things[o + 0].type) \
+                        and things[o + 1].type == NodeType.InfixOperator \
+                        and things[o + 1].value != '=' \
+                        and NodeType.is_expression(things[o + 2].type)
+                ):
+            return things[:o] + [
+                Node(NodeType.InfixOperation,
+                     (things[o + 0], things[o + 1].value, things[o + 2]))
+            ] + things[(o + 3):], True
 
         return things, False
 
     def recognize_declaration_assignment(self, things, o):
-        if (
-            len(things) >= o + 2
-            and things[o + 0].type == NodeType.PrefixOperator
-            and things[o + 0].value == "°"
-            and things[o + 1].type == NodeType.Assignment
-        ):
-            return (
-                things[:o]
-                + [Node(NodeType.DeclarationAssignment, things[1].value)]
-                + things[(o + 2) :],
-                True,
-            )
+        if len(things) >= o + 2 and things[o + 0].type == NodeType.PrefixOperator and things[o + 0].value == '°' \
+                and things[o + 1].type == NodeType.Assignment:
+            return things[:o] + [Node(NodeType.DeclarationAssignment, things[1].value)] + things[(o + 2):], True
         return things, False
 
     def repeatedly_transform_thing_list(self, things):
         # The order of this list is important because it dictates the precedence of different types of expressions
         recognize_list = [
             self.recognize_function_call,
-            self.recognize_postfix_operation,
+            self.
+                recognize_postfix_operation,
             # If you write `x!` or `x?`, you probably always expect that to be parsed before any expression that it's part of
             self.recognize_infix_operation,
             self.recognize_conditional_expression,
             self.recognize_assignment,
             self.recognize_declaration_assignment,
-            self.recognize_prefix_operation
+            self.recognize_prefix_operation,
+            self.recognize_for_loop_expression
             # `-> <expr>` is a PrefixOperation and you always want to keep the whole `<expr>` together
         ]
         i = 0
@@ -763,21 +685,22 @@ class File:
         return final_node
 
     def is_boolean(self):
-        return self.slice(4) == "true" or self.slice(5) == "false"
+        return self.slice(4) == 'true' or self.slice(5) == 'false'
 
     def parse_boolean(self):
-        if self.slice(5) == "False":
+        if self.slice(5) == 'False':
             self.position += 5
             return Node(NodeType.Boolean, self.slice(5))
-        elif self.slice(4) == "True":
+        elif self.slice(4) == 'True':
             self.position += 4
             return Node(NodeType.Boolean, self.slice(4))
 
     def is_block(self):
-        return self.get() == "{"
+        return self.get() == '{'
 
     def parse_block(self):
-        return self.parse_general_block(NodeType.OpeningCurly, NodeType.ClosingCurly)
+        return self.parse_general_block(NodeType.OpeningCurly,
+                                        NodeType.ClosingCurly)
 
     def parse(self):
         # self.check_start()
@@ -788,18 +711,18 @@ class File:
         return self.parse_general_block(NodeType.Start, NodeType.End)
 
     def check_start(self):
-        if not self.slice(5) == "START" in self.content:
-            raise WhereToStartError("ABC")  # details = position of error
+        if not self.slice(5) == 'START' in self.content:
+            raise WhereToStartError('ABC')  # details = position of error
 
     def check_end(self):
-        if self.slice(3) == "END":
+        if self.slice(3) == 'END':
             sys.exit()
 
     def is_separator(self):
         return self.get() in self.separators
 
     def is_builtin_identifier(self):
-        return self.get() == "#"
+        return self.get() == '#'
 
     def parse_builtin_identifier(self):
         self.position += 1
@@ -817,7 +740,7 @@ class File:
         raise Exception
 
     def is_statement(self):
-        self.statements = ["if", "elif", "else", "while", "for"]
+        self.statements = ['if', 'elif', 'else', 'while', 'for']
 
         for i in range(5):
 
@@ -829,9 +752,8 @@ class File:
         for i in range(5):
             if self.slice(i) in self.statements:
                 self.position += i
-                return Node(
-                    NodeType.Statement, self.content[self.position - i : self.position]
-                )
+                return Node(NodeType.Statement,
+                            self.content[self.position - i:self.position])
 
     def is_type_assignment(self):
         ...
@@ -841,24 +763,21 @@ class File:
         for (is_x, parse_x) in [
             (self.is_start, self.parse_start),
             (self.is_function, self.parse_function),
-            (self.is_end, self.parse_end),
-            (self.is_string, self.parse_string),
+            (self.is_end, self.parse_end), (self.is_string, self.parse_string),
             (self.is_statement, self.parse_statement),
             (self.is_identifier, self.parse_identifier),
             (self.is_integer, self.parse_integer),
             (self.is_prefix_operator, self.parse_prefix_operator),
             (self.is_postfix_operator, self.parse_postfix_operator),
             (self.is_infix_operator, self.parse_infix_operator),
-            (
-                (self.is_opening_curly, self.parse_opening_curly)
-                if no_blocks
-                else (self.is_block, self.parse_block)
-            ),
+            ((self.is_opening_curly,
+              self.parse_opening_curly) if no_blocks else
+            (self.is_block, self.parse_block)),
             (self.is_closing_curly, self.parse_closing_curly),
             (self.is_comma, self.parse_comma),
             (self.is_builtin_identifier, self.parse_builtin_identifier),
             (self.is_boolean, self.parse_boolean),
-            (self.is_colon, self.parse_colon),
+            (self.is_colon, self.parse_colon)
         ]:
             if is_x():
                 return parse_x()
@@ -871,7 +790,7 @@ class File:
 
     def parse_identifier(self):
         identifier = ""
-        while self.get() in string.ascii_letters + "_" + string.digits:
+        while self.get() in string.ascii_letters + '_' + string.digits:
             identifier += self.get()
             self.position += 1
         return Node(NodeType.Identifier, identifier)
@@ -891,7 +810,7 @@ class File:
         return Node(NodeType.Integer, integer)
 
     def is_postfix_operator(self):
-        return self.get() in ["!", "?"]
+        return self.get() in ['!', '?']
 
     def parse_postfix_operator(self):
         c = self.get()
@@ -899,47 +818,29 @@ class File:
         return Node(NodeType.PostfixOperator, c)
 
     def is_infix_operator(self):
-        if self.slice(3) == "//=":
+        if self.slice(3) in ['//=', 'and', 'not']:
             return True
         elif self.slice(2) in [
-            "//",
-            "%=",
-            "+=",
-            "==",
-            "-=",
-            "*=",
-            "^=",
-            "==",
-            "/=",
-            ">=",
-            "<=",
+            '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
+            '<=', 'or'
         ]:
             return True
-        elif self.get() in ["^", ">", "<", "*", "/", "=", "+", "-", "."]:
+        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.']:
             return True
 
     def parse_infix_operator(self):
-        if self.slice(3) == "//=":
+        if self.slice(3) in ['//=', 'and', 'not']:
             s = self.slice(3)
             self.position += 3
             return Node(NodeType.InfixOperator, s)
         elif self.slice(2) in [
-            "//",
-            "%=",
-            "+=",
-            "==",
-            "-=",
-            "*=",
-            "^=",
-            "==",
-            "/=",
-            ">=",
-            "<=",
+            '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
+            '<=', 'or'
         ]:
             s = self.slice(2)
             self.position += 2
             return Node(NodeType.InfixOperator, s)
-        elif self.get() in ["^", ">", "<", "*", "/", "=", "+", "-", "."]:
+        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.']:
             c = self.get()
             self.position += 1
             return Node(NodeType.InfixOperator, c)
@@ -960,14 +861,14 @@ class File:
         return Node(NodeType.End, None)
 
     def is_opening_curly(self):
-        return self.get() == "{"
+        return self.get() == '{'
 
     def parse_opening_curly(self):
         self.position += 1
         return Node(NodeType.OpeningCurly, None)
 
     def is_closing_curly(self):
-        return self.get() == "}"
+        return self.get() == '}'
 
     def parse_closing_curly(self):
         self.position += 1
@@ -975,16 +876,8 @@ class File:
 
     def is_type(self):
         for typename in [
-            "complex",
-            "int",
-            "str",
-            "float",
-            "bin",
-            "hex",
-            "oct",
-            "list",
-            "bool",
-            "dict",
+            'complex', 'int', 'str', 'float', 'bin', 'hex', 'oct', 'list',
+            'bool', 'dict'
         ]:
             if self.slice(len(typename)) == typename:
                 return True
@@ -992,16 +885,8 @@ class File:
 
     def parse_type(self):
         for typename in [
-            "complex",
-            "int",
-            "str",
-            "float",
-            "bin",
-            "hex",
-            "oct",
-            "list",
-            "bool",
-            "dict",
+            'complex', 'int', 'str', 'float', 'bin', 'hex', 'oct', 'list',
+            'bool', 'dict'
         ]:
             if self.slice(len(typename)) == typename:
                 self.position += len(typename)
@@ -1009,7 +894,7 @@ class File:
         raise Exception
 
     def is_comma(self):
-        return self.get() == ","
+        return self.get() == ','
 
     def parse_comma(self):
         self.position += 1
@@ -1031,14 +916,62 @@ class File:
         return Node(NodeType.String, s)
 
     def is_colon(self):
-        return self.get() == ":"
+        return self.get() == ':'
 
     def parse_colon(self):
         self.position += 1
-        return Node(NodeType.Colon, ":")
+        return Node(NodeType.Colon, ':')
+
+    def is_for_loop(self):
+        return self.slice(3) == 'for'
+
+    def parse_for_loop_var(self):
+        if not self.is_identifier():
+            raise Exception
+        return self.parse_identifier().value
+
+    def parse_for_loop_keyword(self):
+        if self.slice(3) != 'for':
+            raise Exception
+        self.position += 3
+
+    def parse_for(self):
+        self.parse_for_loop_keyword()
+        self.skip_useless()
+        var = self.parse_for_loop_var()
+        self.skip_useless()
+        self.parse_colon()
+        self.skip_useless()
+        if self.is_opening_curly():
+            iter_ = self.parse_block()
+            self.skip_useless()
+        elif self.is_string():
+            iter_ = self.parse_string()
+            self.skip_useless()
+        elif self.is_identifier():
+            iter_ = self.parse_identifier()
+            self.skip_useless()
+        elif self.is_function():
+            iter_ = self.parse_function()
+        self.parse_block()
+
+        return Node(NodeType.ForLoop, {'iterated_variable': var, 'iterable': iter_})
+
+    def is_if(self):
+        return self.slice(2) == 'if'
+
+    def parse_if_keyword(self):
+        if self.slice(2) != 'if':
+            raise Exception
+        self.position += 2
+
+    def parse_if(self):
+        self.parse_if()
+        self.skip_useless()
+        ...
 
     def is_class(self):
-        return self.slice(2) == "cl"
+        return self.slice(2) == 'cl'
 
     def parse_class_keyword(self):
         if self.slice(2) != "cl":
@@ -1062,7 +995,7 @@ class File:
         self.parse_closing_curly()
         self.skip_useless()
 
-        return Node(NodeType.Class, {"name": name, "function_names": functions})
+        return Node(NodeType.Class, {'name': name, 'function_names': functions})
 
     def is_function(self):
         return self.slice(2) == "fn"
@@ -1083,7 +1016,7 @@ class File:
         self.parse_opening_curly()
         self.skip_useless()
 
-        type = "any"
+        type = 'any'
         lst = []
         while True:
             if self.is_closing_curly():
@@ -1102,7 +1035,7 @@ class File:
                 self.skip_useless()
                 lst.append((name, type))
             else:
-                lst.append((name, "any"))
+                lst.append((name, 'any'))
 
             if self.is_closing_curly():
                 break
@@ -1129,15 +1062,8 @@ class File:
         self.skip_useless()
         body = self.parse_function_body()
         self.skip_useless()
-        return Node(
-            NodeType.Function,
-            {
-                "type": FunctionType.External,
-                "name": name,
-                "arg_names": parameters,
-                "body": body,
-            },
-        )
+        return Node(NodeType.Function,
+                    {"type": FunctionType.External, "name": name, "arg_names": parameters, "body": body})
 
 
 def main(filename):
@@ -1162,6 +1088,7 @@ tests = []
 tests += ["factorial"]
 tests += ["brack"]
 tests += ["drucke"]
+tests += ["for_test"]
 
 for test in tests:
     print(f"Running test: {test}")
