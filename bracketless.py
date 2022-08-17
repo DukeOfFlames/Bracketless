@@ -757,7 +757,7 @@ class File:
         ):
             return (
                 things[:o]
-                + [Node(NodeType.DeclarationAssignment, things[1].value)]
+                + [Node(NodeType.DeclarationAssignment, things[o + 1].value)]
                 + things[(o + 2) :],
                 True,
             )
