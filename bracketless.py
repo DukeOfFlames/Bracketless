@@ -1362,6 +1362,7 @@ tests += ["try"]
 tests += ["abc"]
 tests += ["builtin_functions"]
 tests += ["negative_integers"]
+tests += ["multiple_parameters"]
 
 for test in tests:
     print(f"Running test: {test}")
