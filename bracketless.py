@@ -35,37 +35,40 @@ def flatten_list(lst):
 
 
 def factorial(n):
-    if n == 0:
-        return 1
-    else:
-        return n * factorial(n - 1)
+    res = 1
+    while n > 0:
+        res *= n
+        n -= 1
+    return res
 
 
 # https://www.desmos.com/calculator/3y4mi46f1j
 # https://oeis.org/A030169
 def factorial_approximation(f):
-    if f > 1:
-        return f * factorial_approximation(f - 1)
-    else:
-        coefs = [
-            1.0,
-            -0.5717359821489323,
-            0.9364531044181281,
-            -0.6892160181080689,
-            0.4597437410503836,
-            -0.15662271468032285,
-            0.016194354022299642,
-            0.005183515446512647,
-        ]
-        return sum([coefs[exp] * f**exp for exp in range(len(coefs))])
-        """
-        p_x = 0.461632144968362341262659542325721328468196204006446351295988409
-        p_y = 0.1143968055891112997211840994174112667920484663300965511287998341
-        a = - p_y * (2 * p_x - 1) / ((p_x**2 - p_x)**2)
-        b = (2 * p_x - 3 * p_x**2) / (2 * p_x - 1)
-        res = f * (f - 1) * (a * (f + b))
-        return 1 - res
-        """
+    res = 1.0
+    while f > 1:
+        res *= f
+        f -= 1
+    coefs = [
+        1.0,
+        -0.5717359821489323,
+        0.9364531044181281,
+        -0.6892160181080689,
+        0.4597437410503836,
+        -0.15662271468032285,
+        0.016194354022299642,
+        0.005183515446512647,
+    ]
+    res *= sum([coefs[exp] * f**exp for exp in range(len(coefs))])
+    return res
+    """
+    p_x = 0.461632144968362341262659542325721328468196204006446351295988409
+    p_y = 0.1143968055891112997211840994174112667920484663300965511287998341
+    a = - p_y * (2 * p_x - 1) / ((p_x**2 - p_x)**2)
+    b = (2 * p_x - 3 * p_x**2) / (2 * p_x - 1)
+    res = f * (f - 1) * (a * (f + b))
+    return 1 - res
+    """
     """
     return (2 * math.pi * f)**(1/2) * (f / math.e)**f
     """
@@ -230,6 +233,7 @@ class ExecutionEnvironment:
         for i in range(len(self.env))[::-1]:
             if name in self.env[i].keys():
                 self.env[i][name] = value
+                return
         # If no variable matches the name, raise an Error
         raise Exception(f"Could not find variable named {repr(name)}")
 
@@ -407,19 +411,34 @@ class Node:
             lhs = self.value[0].interpret(execution_environment)
             op = self.value[1]
             rhs = self.value[2].interpret(execution_environment)
-            if op in ["+", "*"]:
+            if op in ["+", "-", "*"]:
+                func = {
+                    "+": (lambda x, y: x + y),
+                    "-": (lambda x, y: x - y),
+                    "*": (lambda x, y: x * y),
+                }[op]
                 if lhs.type == NodeType.Integer and rhs.type == NodeType.Integer:
+                    return Node(NodeType.Integer, func(lhs.value, rhs.value))
+                lhs_as_float = lhs.convert_to_float()
+                rhs_as_float = rhs.convert_to_float()
+                if lhs_as_float != None and rhs_as_float != None:
                     return Node(
-                        NodeType.Integer,
-                        {"+": (lambda x, y: x + y), "*": (lambda x, y: x * y)}[op](
-                            lhs.value, rhs.value
-                        ),
+                        NodeType.Float, func(lhs_as_float.value, rhs_as_float.value)
                     )
             if op == "/":
                 lhs_as_float = lhs.convert_to_float()
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
                     return Node(NodeType.Float, lhs_as_float.value / rhs_as_float.value)
+            if op == "^":
+                if lhs.type == NodeType.Integer and rhs.type == NodeType.Integer:
+                    return Node(NodeType.Integer, lhs.value**rhs.value)
+                lhs_as_float = lhs.convert_to_float()
+                rhs_as_float = rhs.convert_to_float()
+                if lhs_as_float != None and rhs_as_float != None:
+                    return Node(
+                        NodeType.Float, lhs_as_float.value**rhs_as_float.value
+                    )
             if op == ".":
                 if lhs.type == NodeType.Function and rhs.type == NodeType.Function:
 
@@ -1287,6 +1306,7 @@ tests = []
 # tests += ["drucke"]
 tests += ["for_test"]
 tests += ["try"]
+tests += ["abc"]
 
 for test in tests:
     print(f"Running test: {test}")
