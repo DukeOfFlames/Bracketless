@@ -893,6 +893,9 @@ class File:
     def is_type_assignment(self):
         ...
 
+    def return_string(self):
+        return Node(NodeType.String, self.string)
+
     def parse_thing(self, no_blocks=False):
         self.skip_useless()
         for (is_x, parse_x) in [
@@ -936,9 +939,6 @@ class File:
 
     # def is_integer(self):
     #     return self.get() in string.digits
-
-    def return_string(self):
-        return Node(NodeType.String, self.string)
 
     # def parse_integer(self):
     #     integer = 0
