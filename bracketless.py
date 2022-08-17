@@ -795,15 +795,19 @@ class File:
     def recognize_function_call(self, things, o):
         if len(things) >= o + 2 and (
             NodeType.is_expression(things[o + 0].type)
-            and things[o + 1].type == NodeType.Block
-            and len(things[o + 1].value) == 1
+            and (
+                (things[o + 1].type == NodeType.Block and len(things[o + 1].value) == 1)
+                or (things[o + 1].type == NodeType.List)
+            )
         ):
             func_expr = things[o + 0]
-            func_args = things[o + 1].value[0]
-            if func_args.type != NodeType.List:
-                func_args = [func_args]
-            else:
+            func_args = things[o + 1]
+            if func_args.type == NodeType.Block:
+                func_args = [func_args.value[0]]
+            elif func_args.type == NodeType.List:
                 func_args = func_args.value
+            else:
+                raise Exception
             return (
                 things[:o]
                 + [Node(NodeType.FunctionCall, (func_expr, func_args))]
