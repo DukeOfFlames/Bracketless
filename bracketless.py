@@ -176,6 +176,11 @@ class NodeType:
             NodeType.String, NodeType.List
         ]
 
+    def is_number(node_type):
+        return node_type in [
+            NodeType.Integer, NodeType.Float
+        ]
+
 
 class FunctionType:
     External = 0
@@ -457,6 +462,68 @@ class Builtins:
         return Node(NodeType.Integer, max([node.value for node in lst.value]))
 
     builtins["max"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": max})
+
+    def min(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if not lst.type == NodeType.List:
+            raise Exception
+        if not all([node.type == NodeType.Integer for node in lst.value]):
+            raise Exception
+        return Node(NodeType.Integer, min([node.value for node in lst.value]))
+
+    builtins["min"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": min})
+
+    def count(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if not lst.type == NodeType.List:
+            raise Exception
+        return Node(NodeType.Integer, len([node.value for node in lst.value]))
+
+    builtins["count"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": count})
+
+    def sum(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if not lst.type == NodeType.List:
+            raise Exception
+        if not all([NodeType.is_number(node.type) for node in lst.value]) or all(
+                [node.type == NodeType.Float for node in lst.value]):
+            raise Exception
+
+        if not all([node.type == NodeType.Integer for node in lst.value]):
+            l_ = [node.value for node in lst.value]
+            res = 0
+            for l in l_:
+                res += l
+            return Node(NodeType.Integer, res)
+
+        if not all([node.type == NodeType.Float for node in lst.value]):
+            l_ = [node.value for node in lst.value]
+            res = 0.0
+            for l in l_:
+                res += l
+            return Node(NodeType.Float, res)
+
+    builtins["min"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": min})
+
+    def avg(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if not lst.type == NodeType.List:
+            raise Exception
+        if not all([node.type in [NodeType.Integer, NodeType] for node in lst.value]):
+            raise Exception
+
+        l_ = [node.value for node in lst.value]
+        return Node(NodeType.Integer, sum(l_) / len(l_))
+
+    builtins["avg"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": avg})
 
 
 class Error(Exception):  # TODO: Implement in own language
