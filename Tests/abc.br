@@ -1,0 +1,11 @@
+START
+
+°x = 5
+
+fn square{x:int}{
+    -> {x!!?? - x} ^ 2
+}
+
+x = square{x}
+
+END
