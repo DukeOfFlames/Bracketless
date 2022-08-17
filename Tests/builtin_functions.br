@@ -1,0 +1,9 @@
+START
+
+°list = {4, 6, 8}
+°max = #max{list}
+#drucke{max}
+
+§ °list = #max{{4, 6, 8}}
+
+END

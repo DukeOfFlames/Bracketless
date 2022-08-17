@@ -481,14 +481,28 @@ class Node:
 
 
 class Builtins:
+    builtins = dict()
+
     def drucke(execution_environment, params):
         print(params)
 
-    builtins = {
-        "drucke": Node(
-            NodeType.Function, {"type": FunctionType.Internal, "body": drucke}
-        )
-    }
+    builtins["drucke"] = Node(
+        NodeType.Function, {"type": FunctionType.Internal, "body": drucke}
+    )
+
+    def max(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if not lst.type == NodeType.List:
+            raise Exception
+        if not all([node.type == NodeType.Integer for node in lst.value]):
+            raise Exception
+        return Node(NodeType.Integer, max([node.value for node in lst.value]))
+
+    builtins["max"] = Node(
+        NodeType.Function, {"type": FunctionType.Internal, "body": max}
+    )
 
 
 class Error(Exception):  # TODO: Implement in own language
@@ -1307,6 +1321,7 @@ tests = []
 tests += ["for_test"]
 tests += ["try"]
 tests += ["abc"]
+tests += ["builtin_functions"]
 
 for test in tests:
     print(f"Running test: {test}")
