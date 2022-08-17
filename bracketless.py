@@ -32,7 +32,8 @@ import math
 
 def flatten_list(lst):
     return [inner for outer in lst for inner in outer]
-    
+
+
 def factorial(n):
     res = 1
     while n > 0:
@@ -40,15 +41,17 @@ def factorial(n):
         n -= 1
     return res
 
-#https://www.desmos.com/calculator/3y4mi46f1j
-#https://oeis.org/A030169
+
+# https://www.desmos.com/calculator/3y4mi46f1j
+# https://oeis.org/A030169
 def factorial_approximation(f):
     res = 1.0
     while f > 1:
         res *= f
         f -= 1
-    coefs = [1.0, -0.5717359821489323, 0.9364531044181281, -0.6892160181080689, 0.4597437410503836, -0.15662271468032285, 0.016194354022299642, 0.005183515446512647]
-    res *= sum([coefs[exp] * f**exp for exp in range(len(coefs))])
+    coefs = [1.0, -0.5717359821489323, 0.9364531044181281, -0.6892160181080689, 0.4597437410503836,
+             -0.15662271468032285, 0.016194354022299642, 0.005183515446512647]
+    res *= sum([coefs[exp] * f ** exp for exp in range(len(coefs))])
     return res
     """
     p_x = 0.461632144968362341262659542325721328468196204006446351295988409
@@ -61,18 +64,20 @@ def factorial_approximation(f):
     """
     return (2 * math.pi * f)**(1/2) * (f / math.e)**f
     """
-    
+
+
 def inverse_factorial_approximation(f):
     pow = 0
-    while factorial_approximation(2**pow) < f:
+    while factorial_approximation(2 ** pow) < f:
         pow += 1
     pow -= 1
-    res = 2**pow
-    while res + 2**pow != res: #while `2**pow` still has an effect when added to `res`
-        while factorial_approximation(res + 2**pow) < f:
-            res += 2**pow
+    res = 2 ** pow
+    while res + 2 ** pow != res:  # while `2**pow` still has an effect when added to `res`
+        while factorial_approximation(res + 2 ** pow) < f:
+            res += 2 ** pow
         pow -= 1
     return res
+
 
 def inverse_factorial(f):
     return inverse_factorial_approximation(f)
@@ -91,7 +96,7 @@ class NodeType:
     Start = 6
     End = 7
     Block = 8
-    #InternalFunctionPrefix = 9
+    # InternalFunctionPrefix = 9
     Comma = 10
     PrefixOperator = 11
     # Quote = 12
@@ -111,7 +116,7 @@ class NodeType:
     InfixOperation = 26
     Colon = 27
     Type = 28
-    #InternalFunction = 29
+    # InternalFunction = 29
     DeclarationAssignment = 30
     BuiltinIdentifier = 31
     Float = 32
@@ -276,7 +281,7 @@ class Node:
 
     def __repr__(self):
         return f"{self:s}"
-        
+
     def convert_to_float(self):
         if self.type == NodeType.Float:
             return self
@@ -304,7 +309,7 @@ class Node:
             value = self.value[1].interpret(execution_environment)
             execution_environment.set_variable(name, value)
             return value
-            
+
         if self.type == NodeType.DeclarationAssignment:
             name = self.value[0]
             value = self.value[1].interpret(execution_environment)
@@ -362,7 +367,7 @@ class Node:
                 raise Return(v)
             raise Exception(
                 f"Could not interpret PrefixOperation with {self.value}")
-                
+
         if self.type == NodeType.PostfixOperation:
             v = self.value[0].interpret(execution_environment)
             op = self.value[1]
@@ -406,7 +411,10 @@ class Node:
                             raise Exception
                         param = params[0]
                         with execution_environment:
-                            return Node(NodeType.FunctionCall, (lhs, [Node(NodeType.FunctionCall, (rhs, [param]))])).interpret(execution_environment)
+                            return Node(NodeType.FunctionCall,
+                                        (lhs, [Node(NodeType.FunctionCall, (rhs, [param]))])).interpret(
+                                execution_environment)
+
                     return Node(NodeType.Function, {"type": FunctionType.Internal, "body": combined_func})
             raise Exception(
                 f"Could not interpret InfixOperation with ({lhs}, {op}, {rhs})")
@@ -414,7 +422,7 @@ class Node:
         if self.type == NodeType.Identifier:
             name = self.value
             return execution_environment.get_variable(name)
-            
+
         if self.type == NodeType.BuiltinIdentifier:
             name = self.value
             return Builtins.builtins[name]
@@ -558,7 +566,7 @@ class File:
                 and things[o + 2].type == NodeType.InfixOperator and things[o + 2].value == ':' \
                 and NodeType.is_iterable(things[o + 3].type):
             return things[:o] + [
-                Node(NodeType.ForLoopExpression, (things[o+1].value, things[o+3].value))
+                Node(NodeType.ForLoopExpression, (things[o + 1].value, things[o + 3].value))
             ], True
 
         else:
@@ -650,7 +658,7 @@ class File:
     def recognize_declaration_assignment(self, things, o):
         if len(things) >= o + 2 and things[o + 0].type == NodeType.PrefixOperator and things[o + 0].value == '°' \
                 and things[o + 1].type == NodeType.Assignment:
-            return things[:o] + [Node(NodeType.DeclarationAssignment, things[1].value)] + things[(o + 2):], True
+            return things[:o] + [Node(NodeType.DeclarationAssignment, things[o + 1].value)] + things[(o + 2):], True
         return things, False
 
     def repeatedly_transform_thing_list(self, things):
