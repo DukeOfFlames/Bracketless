@@ -1,0 +1,5 @@
+START
+° i_1 = 5
+° i_2 = -5
+#drucke{i_1 + i_2}
+END
