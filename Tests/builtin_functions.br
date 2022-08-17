@@ -1,5 +1,7 @@
 START
 
+#drucke{#max{{4, 6, 8}}}
+
 °list = {4, 6, 8}
 °max = #max{list}
 °hex = #hex{13}
