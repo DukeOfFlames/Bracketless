@@ -53,17 +53,6 @@ def factorial_approximation(f):
              -0.15662271468032285, 0.016194354022299642, 0.005183515446512647]
     res *= sum([coefs[exp] * f ** exp for exp in range(len(coefs))])
     return res
-    """
-    p_x = 0.461632144968362341262659542325721328468196204006446351295988409
-    p_y = 0.1143968055891112997211840994174112667920484663300965511287998341
-    a = - p_y * (2 * p_x - 1) / ((p_x**2 - p_x)**2)
-    b = (2 * p_x - 3 * p_x**2) / (2 * p_x - 1)
-    res = f * (f - 1) * (a * (f + b))
-    return 1 - res
-    """
-    """
-    return (2 * math.pi * f)**(1/2) * (f / math.e)**f
-    """
 
 
 def inverse_factorial_approximation(f):
