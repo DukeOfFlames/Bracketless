@@ -374,6 +374,12 @@ class Node:
             v = self.value[1].interpret(execution_environment)
             if op == "->":
                 raise Return(v)
+            if op == '-':
+                if v.type == NodeType.Integer:
+                    return Node(NodeType.Integer, - v.value)
+                v_as_float = v.convert_to_float()
+                if v_as_float != None:
+                    return Node(NodeType.Float, - v.value)
             raise Exception(
                 f"Could not interpret PrefixOperation with {self.value}")
 
@@ -738,12 +744,23 @@ class File:
         if len(things) >= o + 2 and \
                 (
                         things[o + 0].type == NodeType.PrefixOperator \
+                        and things[o + 0].value != '°' \
                         and NodeType.is_expression(things[o + 1].type)
                 ):
             return things[:o] + [
                 Node(NodeType.PrefixOperation,
                      (things[o + 0].value, things[o + 1]))
             ] + things[(o + 2):], True
+
+        if len(things) >= o + 2 and \
+            (
+                things[o + 0].type == NodeType.InfixOperator
+                and
+                things[o + 0].value == '-'
+                and
+                NodeType.is_expression(things[o + 1].type)
+            ):
+            return things[:o] + [Node(NodeType.PrefixOperation, ('-', things[o + 1]))] + things[(o + 2):], True
 
         return things, False
 
@@ -790,9 +807,9 @@ class File:
             # If you write `x!` or `x?`, you probably always expect that to be parsed before any expression that it's part of
             self.recognize_infix_operation,
             self.recognize_conditional_expression,
+            self.recognize_prefix_operation,
             self.recognize_assignment,
             self.recognize_declaration_assignment,
-            self.recognize_prefix_operation,
             self.recognize_for_loop_expression
             # `-> <expr>` is a PrefixOperation and you always want to keep the whole `<expr>` together
         ]
@@ -1361,7 +1378,7 @@ tests += ["for_test"]
 tests += ["try"]
 tests += ["abc"]
 tests += ["builtin_functions"]
-tests += ["negative_integers"]
+tests += ["negative_numbers"]
 tests += ["multiple_parameters"]
 
 for test in tests:
