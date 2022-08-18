@@ -82,6 +82,18 @@ def inverse_factorial(f):
     return inverse_factorial_approximation(f)
 
 
+def debug_print(s):
+    __print__(s, file=sys.stderr)
+
+
+def output_print(s):
+    __print__(s, file=sys.stdout)
+
+
+__print__ = print
+print = None
+
+
 language_name = "Bracketless"
 
 
@@ -201,15 +213,17 @@ class ExecutionEnvironment:
         # [{'a': 2, 'l': [4, 6, 8]}, {'n': 5, 'i': 3}, {'i': 2}]
         self.env = [dict()]
 
-    def print(self):
-        print("[")
+    def debug_print(self):
+        debug_print("[")
         for scope in self.env:
-            print("  {")
+            debug_print("  {")
             for (key, value) in scope.items():
-                print(f"    {key}:")
-                print("\n".join(["      " + line for line in repr(value).split("\n")]))
-            print("  }")
-        print("]")
+                debug_print(f"    {key}:")
+                debug_print(
+                    "\n".join(["      " + line for line in repr(value).split("\n")])
+                )
+            debug_print("  }")
+        debug_print("]")
 
     def get_variable(self, name):
         # Search through all scopes and return the value of the innermost variable with a matching name
@@ -314,15 +328,15 @@ class Node:
 
     def interpret(self, execution_environment):
 
-        # execution_environment.print()
+        # execution_environment.debug_print()
 
         if self.type == NodeType.Block:
             if len(self.value) != 1:
                 with execution_environment:
                     for thing in self.value:
                         thing.interpret(execution_environment)
-                    print("Environment at end of block:")
-                    execution_environment.print()
+                    debug_print("Environment at end of block:")
+                    execution_environment.debug_print()
                 return None
             else:
                 return self.value[0].interpret(execution_environment)
@@ -342,8 +356,8 @@ class Node:
         if self.type == NodeType.FunctionCall:
             func_expr = self.value[0]
             if type(self.value[1]) == Node:
-                print("!!!")
-                print(self)
+                debug_print("!!!")
+                debug_print(self)
                 raise Exception
             func_arg_values = [
                 value.interpret(execution_environment) for value in self.value[1]
@@ -486,7 +500,7 @@ class Builtins:
     builtins = dict()
 
     def drucke(execution_environment, params):
-        print(params)
+        output_print(params)
 
     builtins["drucke"] = Node(
         NodeType.Function, {"type": FunctionType.Internal, "body": drucke}
@@ -1503,12 +1517,12 @@ def main(filename):
         contents = f.read()
     file = File(contents)
     root_node = file.parse()
-    print("Root Node:")
-    print(root_node)
-    print("")
-    print("Interpreting...")
+    debug_print("Root Node:")
+    debug_print(root_node)
+    debug_print("")
+    debug_print("Interpreting...")
     root_node.interpret(ExecutionEnvironment())
-    print("")
+    debug_print("")
 
 
 tests = []
@@ -1528,5 +1542,5 @@ tests += ["negative_numbers"]
 tests += ["multiple_parameters"]
 
 for test in tests:
-    print(f"Running test: {test}")
+    debug_print(f"Running test: {test}")
     main(f"Tests/{test}.br")
