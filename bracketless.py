@@ -936,6 +936,8 @@ class File:
             (self.is_hex, self.parse_hex),
             (self.is_bin, self.parse_bin),
             (self.is_number, self.parse_number),
+            (self.is_import_statement, self.parse_import_statement),
+            (self.is_python_import_statement, self.parse_python_import_statement),
             (self.is_identifier, self.parse_identifier),
             (self.is_prefix_operator, self.parse_prefix_operator),
             (self.is_postfix_operator, self.parse_postfix_operator),
@@ -1146,6 +1148,26 @@ class File:
     def parse_comma(self):
         self.position += 1
         return Node(NodeType.Comma, None)
+
+    def is_import_statement(self):
+        return self.slice(3) == 'lib'
+
+    def parse_import_statement(self):
+        self.position += 3
+        self.skip_useless()
+        lib = self.parse_identifier()
+        self.skip_useless()
+        return Node(NodeType.Statement, ('lib', lib))
+
+    def is_python_import_statement(self):
+        return self.slice(5) == 'pylib'
+
+    def parse_python_import_statement(self):
+        self.position += 5
+        self.skip_useless()
+        lib = self.parse_identifier()
+        self.skip_useless()
+        return Node(NodeType.Statement, ('pylib', lib))
 
     def is_string(self):
         return self.get() in ['"', "'"]
