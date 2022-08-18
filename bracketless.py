@@ -319,6 +319,22 @@ class Node:
     def __repr__(self):
         return f"{self:s}"
 
+    def representation(self):
+        if self.type == NodeType.Integer:
+            return str(self.value)
+        elif self.type == NodeType.Float:
+            return str(self.value)
+        elif self.type == NodeType.String:
+            return '"' + repr(self.value)[1:-1] + '"'
+        elif self.type == NodeType.Hexadecimal:
+            return self.value
+        elif self.type == NodeType.Binary:
+            return self.value
+        elif self.type == NodeType.List:
+            return "{" + ", ".join([node.representation() for node in self.value]) + "}"
+        else:
+            raise Exception
+
     def convert_to_float(self):
         if self.type == NodeType.Float:
             return self
@@ -500,7 +516,8 @@ class Builtins:
     builtins = dict()
 
     def drucke(execution_environment, params):
-        output_print(params)
+        for param in params:
+            output_print(param.representation())
 
     builtins["drucke"] = Node(
         NodeType.Function, {"type": FunctionType.Internal, "body": drucke}
