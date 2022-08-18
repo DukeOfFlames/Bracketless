@@ -1,0 +1,10 @@
+START
+° i_11 = 5
+° i_12 = -5
+° i_21 = 5/1
+° i_22 = -5/1
+#drucke{i_11 + i_12}
+#drucke{i_21 + i_12}
+#drucke{i_11 + i_22}
+#drucke{i_21 + i_22}
+END
