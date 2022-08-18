@@ -4,14 +4,8 @@ class TestType:
     Broken = 0
     Silent = 1
     Visible = 2
-    
-broken_tests = [
-    "if_test",
-    "type_assignment",
-    "brack",
-    "for_test",
-    "try",
-    "library_imports",
+
+visible_tests = [
 ]
 
 silent_tests = [
@@ -29,11 +23,17 @@ silent_tests = [
     "multiple_parameters",
 ]
 
-visible_tests = [
+broken_tests = [
+    "if_test",
+    "type_assignment",
+    "brack",
+    "for_test",
+    "try",
+    "library_imports",
 ]
 
 tests = []
-for (test_type, lst) in [(TestType.Broken, broken_tests), (TestType.Silent, silent_tests), (TestType.Visible, visible_tests)]:
+for (test_type, lst) in [(TestType.Visible, visible_tests), (TestType.Silent, silent_tests), (TestType.Broken, broken_tests)]:
     tests += [(test_type, test_name) for test_name in lst]
 
 for (test_type, test_name) in tests:
