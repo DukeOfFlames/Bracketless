@@ -678,16 +678,10 @@ class File:
                         and things[o + 1].type == NodeType.InfixOperator \
                         and things[o + 1].value == '='
                 ):
-            if things[o + 2].value == '"':
-                return things[:o] + [
-                    Node(NodeType.Assignment,
-                         (things[o + 0].value, things[o + 3]))
-                ] + things[(o + 4):], True
-            else:
-                return things[:o] + [
-                    Node(NodeType.Assignment,
-                         (things[o + 0].value, things[o + 2]))
-                ] + things[(o + 3):], True
+            return things[:o] + [
+                Node(NodeType.Assignment,
+                     (things[o + 0].value, things[o + 2]))
+            ] + things[(o + 3):], True
 
         return things, False
 
