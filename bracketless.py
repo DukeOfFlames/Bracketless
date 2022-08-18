@@ -752,11 +752,13 @@ class File:
 
     def recognize_prefix_operation(self, things, o):
         if len(things) >= o + 2 and \
-                (
-                        things[o + 0].type == NodeType.PrefixOperator \
-                        and things[o + 0].value != '°' \
-                        and NodeType.is_expression(things[o + 1].type)
-                ):
+            (
+                things[o + 0].type == NodeType.PrefixOperator
+                and
+                things[o + 0].value != '°'
+                and
+                NodeType.is_expression(things[o + 1].type)
+            ):
             return things[:o] + [
                 Node(NodeType.PrefixOperation,
                      (things[o + 0].value, things[o + 1]))
@@ -770,7 +772,10 @@ class File:
                 and
                 NodeType.is_expression(things[o + 1].type)
             ):
-            return things[:o] + [Node(NodeType.PrefixOperation, ('-', things[o + 1]))] + things[(o + 2):], True
+            return things[:o] + [
+                Node(NodeType.PrefixOperation,
+                     ('-', things[o + 1]))
+            ] + things[(o + 2):], True
 
         return things, False
 
