@@ -132,6 +132,8 @@ class NodeType:
     Float = 32
     ForLoopExpression = 33
     Try = 34
+    Hexadecimal = 35
+    Binary = 36
 
     def string(node_type):
         return {
@@ -167,6 +169,8 @@ class NodeType:
             NodeType.Float: "Float",
             NodeType.ForLoopExpression: "ForLoopExpression",
             NodeType.Try: "Try",
+            NodeType.Hexadecimal: "Hexadecimal",
+            NodeType.Binary: "Binary",
         }[node_type]
 
     def is_expression(node_type):
@@ -578,6 +582,32 @@ class Builtins:
         NodeType.Function, {"type": FunctionType.Internal, "body": avg}
     )
 
+    def hex(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if not NodeType.is_number(lst.type):
+            raise Exception
+
+        return Node(NodeType.Hexadecimal, hex(lst.value))
+
+    builtins["hex"] = Node(
+        NodeType.Function, {"type": FunctionType.Internal, "body": hex}
+    )
+
+    def bin(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if not NodeType.is_number(lst.type):
+            raise Exception
+
+        return Node(NodeType.Binary, bin(lst.value))
+
+    builtins["bin"] = Node(
+        NodeType.Function, {"type": FunctionType.Internal, "body": bin}
+    )
+
 
 class Error(Exception):  # TODO: Implement in own language
     def __init__(self, error_name, details):
@@ -984,8 +1014,10 @@ class File:
             (self.is_for_loop, self.parse_for),
             (self.is_try, self.parse_try),
             (self.is_statement, self.parse_statement),
+            (self.is_hex, self.parse_hex),
+            (self.is_bin, self.parse_bin),
+            (self.is_number, self.parse_number),
             (self.is_identifier, self.parse_identifier),
-            (self.is_integer, self.parse_integer),
             (self.is_prefix_operator, self.parse_prefix_operator),
             (self.is_postfix_operator, self.parse_postfix_operator),
             (self.is_infix_operator, self.parse_infix_operator),
@@ -1016,19 +1048,103 @@ class File:
             self.position += 1
         return Node(NodeType.Identifier, identifier)
 
-    def is_integer(self):
-        return self.get() in string.digits
+    # def is_integer(self):
+    #     return self.get() in string.digits
 
     def return_string(self):
         return Node(NodeType.String, self.string)
 
-    def parse_integer(self):
-        integer = 0
+    # def parse_integer(self):
+    #     integer = 0
+    #     while self.get() in string.digits:
+    #         integer *= 10
+    #         integer += int(self.get())
+    #         self.position += 1
+    #     return Node(NodeType.Integer, integer)
+
+    def is_hex(self):
+        return (
+            self.slice(2) == "0x" and self.content[self.position + 2] in string.digits
+        )
+
+    def parse_hex(self):
+        hex_number = "0x"
+        self.position += 2
+
         while self.get() in string.digits:
-            integer *= 10
-            integer += int(self.get())
+            hex_number += self.get()
             self.position += 1
-        return Node(NodeType.Integer, integer)
+
+        return Node(NodeType.Hexadecimal, hex_number)
+
+    def is_bin(self):
+        return (
+            self.slice(2) == "0b" and self.content[self.position + 2] in string.digits
+        )
+
+    def parse_bin(self):
+        bin_number = "0b"
+        self.position += 2
+
+        while self.get() in string.digits:
+            bin_number += self.get()
+            self.position += 1
+
+        return Node(NodeType.Binary, bin_number)
+
+    def is_number(self):
+        if self.get() == "." and self.content[self.position + 1] in string.digits:
+            return True
+        elif self.get() in string.digits or self.slice(3) in ["inf", "NaN"]:
+            return True
+
+    def parse_number(self):
+        number = 0
+        points = 0
+        decimals = 0
+        exponential = 0
+        exponent = 0
+
+        if self.slice(3) in ["NaN", "inf"]:
+            self.position += 3
+            return Node(NodeType.Float, self.content[self.position - 3 : self.position])
+
+        while self.get() in string.digits + "." and not exponential == 1:
+            if points == 0:
+                if self.get() in string.digits:
+                    number *= 10
+                    number += int(self.get())
+                    self.position += 1
+                if self.get() == ".":
+                    points += 1
+                    self.position += 1
+            if points == 1:
+                if self.get() in string.digits:
+                    decimals += 1
+                    number *= 10
+                    number += int(self.get())
+                    self.position += 1
+
+            if self.slice(2) == "e+":
+                exponential += 1
+                self.position += 2
+
+        while self.get() in string.digits and exponential == 1:
+            exponent *= 10
+            exponent += int(self.get())
+            self.position += 1
+            print(exponent)
+
+        if points == 1 and decimals > 0:
+            number /= 10**decimals
+
+        if exponential == 1:
+            number *= 10**exponent
+
+        if points == 1 or exponential == 1:
+            return Node(NodeType.Float, number)
+        else:
+            return Node(NodeType.Integer, number)
 
     def is_postfix_operator(self):
         return self.get() in ["!", "?"]

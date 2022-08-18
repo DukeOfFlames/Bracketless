@@ -2,7 +2,8 @@ START
 
 °list = {4, 6, 8}
 °max = #max{list}
-#drucke{max}
+°hex = #hex{13}
+°bin = #bin{4!}
 
 § °list = #max{{4, 6, 8}}
 
