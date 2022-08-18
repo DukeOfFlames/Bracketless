@@ -76,6 +76,7 @@ tests = [
         TestType.Silent,
         "multiple_parameters",
     ),
+    (TestType.Broken, "library_imports"),
 ]
 
 for (test_type, test_name) in tests:
