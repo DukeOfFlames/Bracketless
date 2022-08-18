@@ -6,6 +6,9 @@ START
 °max = #max{list}
 °hex = #hex{13}
 °bin = #bin{4!}
+#drucke{max}
+#drucke{hex}
+#drucke{bin}
 
 § °list = #max{{4, 6, 8}}
 
