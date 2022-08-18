@@ -1,11 +1,11 @@
 START
-a = 3
+°a = 3
 fn square {x}
 {
-    res = x * x
+    °res = x * x
     -> res
 }
-b = square{a}
+#drucke{square{a}}
 END
 
 ABCDEF

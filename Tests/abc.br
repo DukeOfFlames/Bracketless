@@ -6,6 +6,6 @@ fn square{x:int}{
     -> {x!!?? - x} ^ 2
 }
 
-x = square{x}
+#drucke{square{x}}
 
 END
