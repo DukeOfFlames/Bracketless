@@ -671,168 +671,125 @@ class File:
 
         return None
 
-    def recognize_assignment(self, things, o):
-        if len(things) >= o + 2 and \
-                (
-                        things[o + 0].type == NodeType.Identifier \
-                        and things[o + 1].type == NodeType.InfixOperator \
-                        and things[o + 1].value == '='
-                ):
-            return things[:o] + [
-                Node(NodeType.Assignment,
-                     (things[o + 0].value, things[o + 2]))
-            ] + things[(o + 3):], True
+    recognize_patterns_list = [
+        (
+            "assignment",
+            [
+                (lambda elem_0: elem_0.type == NodeType.Identifier),
+                (lambda elem_1: elem_1.type == NodeType.InfixOperator and elem_1.value == '='),
+                (lambda elem_2: NodeType.is_expression(elem_2.type)),
+            ],
+            (lambda arr: Node(NodeType.Assignment, (arr[0].value, arr[2]))),
+        ),
+        (
+            "for_loop_expression",
+            [
+                (lambda elem_0: True),
+                (lambda elem_1: elem_1.type == NodeType.Identifier),
+                (lambda elem_2: elem_2.type == NodeType.InfixOperator and elem_2.value == ':'),
+                (lambda elem_3: NodeType.is_iterable(elem_3.type)),
+            ],
+            (lambda arr: Node(NodeType.ForLoopExpression, (arr[1].value, arr[3].value))),
+        ),
+        (
+            "conditional_expression",
+            [
+                (lambda elem_0: elem_0.type == NodeType.Statement),
+                (lambda elem_1: elem_1.type in [NodeType.Identifier, NodeType.String, NodeType.Integer, NodeType.List, NodeType.Function]),
+                (lambda elem_2: elem_2.type == NodeType.InfixOperator and not elem_2.value in ['==', '<', '>', '>=', '<=', '%']),
+                (lambda elem_3: elem_3.type in [NodeType.Identifier, NodeType.String, NodeType.Integer, NodeType.List, NodeType.Function]),
+            ],
+            (lambda arr: Node(NodeType.ConditionalExpression, (arr[0].value, arr[1].value, arr[2].value))),
+        ),
+        (
+            "prefix_operation",
+            [
+                (lambda elem_0: elem_0.type == NodeType.PrefixOperator and elem_0.value != '°'),
+                (lambda elem_1: NodeType.is_expression(elem_1.type)),
+            ],
+            (lambda arr: Node(NodeType.PrefixOperation, (arr[0].value, arr[1]))),
+        ),
+        (
+            "prefix_operation",
+            [
+                (lambda elem_0: elem_0.type == NodeType.InfixOperator and elem_0.value == '-'),
+                (lambda elem_1: NodeType.is_expression(elem_1.type)),
+            ],
+            (lambda arr: Node(NodeType.PrefixOperation, ('-', arr[1]))),
+        ),
+        (
+            "postfix_operation",
+            [
+                (lambda elem_0: NodeType.is_expression(elem_0.type)),
+                (lambda elem_1: elem_1.type == NodeType.PostfixOperator),
+            ],
+            (lambda arr: Node(NodeType.PostfixOperation, (arr[0], arr[1].value))),
+        ),
+        (
+            "infix_operation",
+            [
+                (lambda elem_0: NodeType.is_expression(elem_0.type)),
+                (lambda elem_1: elem_1.type == NodeType.InfixOperator and elem_1.value != '='),
+                (lambda elem_2: NodeType.is_expression(elem_2.type)),
+            ],
+            (lambda arr: Node(NodeType.InfixOperation, (arr[0], arr[1].value, arr[2]))),
+        ),
+        (
+            "declaration_assignment",
+            [
+                (lambda elem_0: elem_0.type == NodeType.PrefixOperator and elem_0.value == '°'),
+                (lambda elem_1: elem_1.type == NodeType.Assignment),
+            ],
+            (lambda arr: Node(NodeType.DeclarationAssignment, arr[1].value)),
+        ),
+        (
+            "function_call",
+            [
+                (lambda elem_0: NodeType.is_expression(elem_0.type)),
+                (lambda elem_1: elem_1.type == NodeType.Block and len(elem_1.value) == 1),
+            ],
+            (lambda arr: Node(NodeType.FunctionCall, (arr[0], [arr[1].value[0]]))),
+        ),
+        (
+            "function_call",
+            [
+                (lambda elem_0: NodeType.is_expression(elem_0.type)),
+                (lambda elem_1: elem_1.type == NodeType.List),
+            ],
+            (lambda arr: Node(NodeType.FunctionCall, (arr[0], arr[1].value))),
+        ),
+    ]
 
-        return things, False
+    recognize_patterns_dict = dict()
+    for (pattern_name, pattern_list, pattern_xform) in recognize_patterns_list:
+        if pattern_name not in recognize_patterns_dict.keys():
+            recognize_patterns_dict[pattern_name] = []
+        recognize_patterns_dict[pattern_name].append((pattern_list, pattern_xform))
 
-    def recognize_for_loop_expression(self, things, o):
-        if len(things) >= o + 4 and things[o + 1].type == NodeType.Identifier \
-                and things[o + 2].type == NodeType.InfixOperator and things[o + 2].value == ':' \
-                and NodeType.is_iterable(things[o + 3].type):
-            return things[:o] + [
-                Node(NodeType.ForLoopExpression, (things[o + 1].value, things[o + 3].value))
-            ], True
-
-        else:
-            return things, False
-
-    def recognize_conditional_expression(self, things, o):
-        if len(things) >= o + 4 and \
-                (
-                        (
-                                things[o + 0].type == NodeType.Statement \
-                                and things[o + 1].type in [NodeType.Identifier, NodeType.String, NodeType.Integer,
-                                                           NodeType.List, NodeType.Function] \
-                                and things[o + 2].type == NodeType.InfixOperator \
-                                and not things[o + 2].value in ['==', '<', '>', '>=', '<=', '%'] \
-                                and things[o + 3].type in [NodeType.Identifier, NodeType.String, NodeType.Integer,
-                                                           NodeType.List, NodeType.Function]
-
-                        ) \
-                        or things[o + 1].type == NodeType.Boolean
-                ):
-            return things[:o] + [
-                Node(NodeType.ConditionalExpression,
-                     (things[o + 0].value, things[o + 1].value,
-                      things[o + 2].value))
-            ] + things[(o + 4):], True
-
-        return things, False
-
-    def recognize_function_call(self, things, o):
-        if len(things) >= o + 2 and \
-                (
-                        NodeType.is_expression(things[o + 0].type)
-                        and
-                        (
-                            (
-                                things[o + 1].type == NodeType.Block
-                                and
-                                len(things[o + 1].value) == 1
-                            )
-                            or
-                            (
-                                things[o + 1].type == NodeType.List
-                            )
-                        )
-                ):
-            func_expr = things[o + 0]
-            func_args = things[o + 1]
-            if func_args.type == NodeType.Block:
-                func_args = [func_args.value[0]]
-            elif func_args.type == NodeType.List:
-                func_args = func_args.value
-            else:
-                raise Exception
-            return things[:o] + [
-                Node(NodeType.FunctionCall, (func_expr, func_args))
-            ] + things[(o + 2):], True
-
-        return things, False
-
-    def recognize_prefix_operation(self, things, o):
-        if len(things) >= o + 2 and \
-            (
-                things[o + 0].type == NodeType.PrefixOperator
-                and
-                things[o + 0].value != '°'
-                and
-                NodeType.is_expression(things[o + 1].type)
-            ):
-            return things[:o] + [
-                Node(NodeType.PrefixOperation,
-                     (things[o + 0].value, things[o + 1]))
-            ] + things[(o + 2):], True
-
-        if len(things) >= o + 2 and \
-            (
-                things[o + 0].type == NodeType.InfixOperator
-                and
-                things[o + 0].value == '-'
-                and
-                NodeType.is_expression(things[o + 1].type)
-            ):
-            return things[:o] + [
-                Node(NodeType.PrefixOperation,
-                     ('-', things[o + 1]))
-            ] + things[(o + 2):], True
-
-        return things, False
-
-    def recognize_postfix_operation(self, things, o):
-        if len(things) >= o + 2 and \
-                (
-                        NodeType.is_expression(things[o + 0].type) \
-                        and things[o + 1].type == NodeType.PostfixOperator
-                ):
-            return things[:o] + [
-                Node(NodeType.PostfixOperation,
-                     (things[o + 0], things[o + 1].value))
-            ] + things[(o + 2):], True
-
-        return things, False
-
-    def recognize_infix_operation(self, things, o):
-        if len(things) >= o + 3 and \
-                (
-                        NodeType.is_expression(things[o + 0].type) \
-                        and things[o + 1].type == NodeType.InfixOperator \
-                        and things[o + 1].value != '=' \
-                        and NodeType.is_expression(things[o + 2].type)
-                ):
-            return things[:o] + [
-                Node(NodeType.InfixOperation,
-                     (things[o + 0], things[o + 1].value, things[o + 2]))
-            ] + things[(o + 3):], True
-
-        return things, False
-
-    def recognize_declaration_assignment(self, things, o):
-        if len(things) >= o + 2 and things[o + 0].type == NodeType.PrefixOperator and things[o + 0].value == '°' \
-                and things[o + 1].type == NodeType.Assignment:
-            return things[:o] + [Node(NodeType.DeclarationAssignment, things[o + 1].value)] + things[(o + 2):], True
+    def recognize_pattern(self, pattern_name, things, o):
+        for pattern in self.recognize_patterns_dict[pattern_name]:
+            pattern_list, pattern_xform = pattern
+            if len(things) >= o + len(pattern_list) and all([pattern_list[i](things[o + i]) for i in range(len(pattern_list))]):
+                return things[:o] + [pattern_xform(things[o:(o + len(pattern_list))])] + things[(o + len(pattern_list)):], True
         return things, False
 
     def repeatedly_transform_thing_list(self, things):
         # The order of this list is important because it dictates the precedence of different types of expressions
         recognize_list = [
-            self.recognize_function_call,
-            self.
-                recognize_postfix_operation,
-            # If you write `x!` or `x?`, you probably always expect that to be parsed before any expression that it's part of
-            self.recognize_infix_operation,
-            self.recognize_conditional_expression,
-            self.recognize_prefix_operation,
-            self.recognize_assignment,
-            self.recognize_declaration_assignment,
-            self.recognize_for_loop_expression
-            # `-> <expr>` is a PrefixOperation and you always want to keep the whole `<expr>` together
+            "function_call",
+            "postfix_operation",
+            "infix_operation",
+            "conditional_expression",
+            "prefix_operation",
+            "assignment",
+            "declaration_assignment",
+            "for_loop_expression",
         ]
         i = 0
         while i < len(recognize_list):
             did_recognize_any = False
             for offset in range(len(things)):
-                things, did_recognize = recognize_list[i](things, offset)
+                things, did_recognize = self.recognize_pattern(recognize_list[i], things, offset)
                 if did_recognize:
                     did_recognize_any = True
                     break
