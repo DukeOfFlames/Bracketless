@@ -1,40 +1,8 @@
-[Integer:
-  1]
-[Integer:
-  1, Integer:
-  2, Integer:
-  3]
-[List:
-  [
-    Integer:
-      1
-    Integer:
-      2
-    Integer:
-      3
-  ]]
-[List:
-  [
-    Integer:
-      1
-    Integer:
-      2
-    Integer:
-      3
-  ], List:
-  [
-    Integer:
-      4
-    Integer:
-      5
-    Integer:
-      6
-  ], List:
-  [
-    Integer:
-      7
-    Integer:
-      8
-    Integer:
-      9
-  ]]
+1
+1
+2
+3
+{1, 2, 3}
+{1, 2, 3}
+{4, 5, 6}
+{7, 8, 9}
