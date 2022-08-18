@@ -1,6 +1,6 @@
 START
 
-a = 6
+°a = 6
 
 fn f{x} {
     -> x * x
@@ -10,6 +10,6 @@ fn g{x} {
     -> x + 1
 }
 
-b = {f . g}{a}
+#drucke{{f . g}{a}}
 
 END

@@ -4,4 +4,10 @@ START
 °c = 'Hi (with Single Quotes)'
 °d = c
 °e = {°f = 1}
+#drucke{a}
+#drucke{b}
+#drucke{c}
+#drucke{d}
+#drucke{e}
+#drucke{f}
 END

@@ -1,32 +1,40 @@
 START
 
-global = "I am a global variable"
+°global = "I am a global variable"
 
 {
-    a_1 = 1
+    °a = 1
     {
-        a_2 = 2
+        °a = 2
         {
-            a_3 = 3
-            a_3
+            °a = 3
+            #drucke{a}
         }
-        a_2 = 4
+        a = 4
+        #drucke{a}
     }
-    a_1 = 5
+    a = 5
+    #drucke{a}
 }
 
 {
-    b = 1
+    °b = 1
     {
         b = 2
-        b
+        {
+            b = 3
+            #drucke{b}
+        }
+        b = 4
+        #drucke{b}
     }
-    b = 3
+    b = 5
+    #drucke{b}
 }
 
 {
-    l = {1, 2, 3}
-    l
+    °l = {1, 2, 3}
+    #drucke{l}
 }
 
 END

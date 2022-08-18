@@ -1352,6 +1352,7 @@ class File:
 
 
 def main(filename):
+    debug_print(f"Running file: {filename}")
     with open(filename, "rt", encoding="utf-8") as f:
         contents = f.read()
     file = File(contents)
@@ -1364,22 +1365,4 @@ def main(filename):
     debug_print("")
 
 
-tests = []
-# tests += ["assignment", "scope_test", "comments", "functions"]
-# tests += ["if_test"]
-# tests += ["type_assignment"]
-# tests += ["declarations"]
-# tests += ["dot"]
-# tests += ["factorial"]
-# tests += ["brack"]
-# tests += ["drucke"]
-tests += ["for_test"]
-tests += ["try"]
-tests += ["abc"]
-tests += ["builtin_functions"]
-tests += ["negative_numbers"]
-tests += ["multiple_parameters"]
-
-for test in tests:
-    debug_print(f"Running test: {test}")
-    main(f"Tests/{test}.br")
+main(sys.argv[1])
