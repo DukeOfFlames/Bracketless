@@ -7,77 +7,39 @@ class TestType:
     Visible = 2
 
 
-tests = [
-    (
-        TestType.Broken,
-        "if_test",
-    ),
-    (
-        TestType.Broken,
-        "type_assignment",
-    ),
-    (
-        TestType.Broken,
-        "brack",
-    ),
-    (
-        TestType.Broken,
-        "for_test",
-    ),
-    (
-        TestType.Broken,
-        "try",
-    ),
-    (
-        TestType.Silent,
-        "assignment",
-    ),
-    (
-        TestType.Silent,
-        "scope_test",
-    ),
-    (
-        TestType.Silent,
-        "comments",
-    ),
-    (
-        TestType.Silent,
-        "functions",
-    ),
-    (
-        TestType.Silent,
-        "declarations",
-    ),
-    (
-        TestType.Silent,
-        "dot",
-    ),
-    (
-        TestType.Silent,
-        "factorial",
-    ),
-    (
-        TestType.Silent,
-        "drucke",
-    ),
-    (
-        TestType.Silent,
-        "abc",
-    ),
-    (
-        TestType.Silent,
-        "builtin_functions",
-    ),
-    (
-        TestType.Silent,
-        "negative_numbers",
-    ),
-    (
-        TestType.Silent,
-        "multiple_parameters",
-    ),
-    (TestType.Broken, "library_imports"),
+broken_tests = [
+    "if_test",
+    "type_assignment",
+    "brack",
+    "for_test",
+    "try",
+    "library_imports",
 ]
+
+silent_tests = [
+    "assignment",
+    "scope_test",
+    "comments",
+    "functions",
+    "declarations",
+    "dot",
+    "factorial",
+    "drucke",
+    "abc",
+    "builtin_functions",
+    "negative_numbers",
+    "multiple_parameters",
+]
+
+visible_tests = []
+
+tests = []
+for (test_type, lst) in [
+    (TestType.Broken, broken_tests),
+    (TestType.Silent, silent_tests),
+    (TestType.Visible, visible_tests),
+]:
+    tests += [(test_type, test_name) for test_name in lst]
 
 for (test_type, test_name) in tests:
     if test_type == TestType.Broken:
