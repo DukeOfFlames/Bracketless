@@ -93,7 +93,6 @@ def output_print(s):
 __print__ = print
 print = None
 
-
 language_name = "Bracketless"
 
 
@@ -135,6 +134,7 @@ class NodeType:
     Try = 34
     Hexadecimal = 35
     Binary = 36
+    Octal = 37
 
     def string(node_type):
         return {
@@ -172,6 +172,7 @@ class NodeType:
             NodeType.Try: "Try",
             NodeType.Hexadecimal: "Hexadecimal",
             NodeType.Binary: "Binary",
+            NodeType.Octal: "Octal",
         }[node_type]
 
     def is_expression(node_type):
@@ -634,6 +635,15 @@ class Builtins:
         NodeType.Function, {"type": FunctionType.Internal, "body": bin}
     )
 
+    def oct(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if not NodeType.is_number(lst.type):
+            raise Exception
+
+        return Node(NodeType.Octal, oct(lst.value))
+
 
 class Error(Exception):  # TODO: Implement in own language
     def __init__(self, error_name, details):
@@ -1079,29 +1089,41 @@ class File:
 
     def is_hex(self):
         return (
-            self.slice(2) == "0x" and self.content[self.position + 2] in string.digits
+            self.slice(2) == "0x"
+            and self.content[self.position + 2] in string.digits + "AaBbCcDdEeFf"
         )
 
     def parse_hex(self):
         hex_number = "0x"
         self.position += 2
 
-        while self.get() in string.digits:
+        while self.get() in string.digits + "AaBbCcDdEeFf":
             hex_number += self.get()
             self.position += 1
 
         return Node(NodeType.Hexadecimal, hex_number)
 
+    def is_oct(self):
+        return self.slice(2) == "0o" and self.content[self.position + 2] in "01234567"
+
+    def parse_oct(self):
+        oct_number = "0o"
+        self.position += 2
+
+        while self.get() in "01234567":
+            oct_number += self.get()
+            self.position += 1
+
+        return Node(NodeType.Octal, oct_number)
+
     def is_bin(self):
-        return (
-            self.slice(2) == "0b" and self.content[self.position + 2] in string.digits
-        )
+        return self.slice(2) == "0b" and self.content[self.position + 2] in ["0", "1"]
 
     def parse_bin(self):
         bin_number = "0b"
         self.position += 2
 
-        while self.get() in string.digits:
+        while self.get() in ["0", "1"]:
             bin_number += self.get()
             self.position += 1
 
