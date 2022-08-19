@@ -75,12 +75,13 @@ def inverse_factorial(f):
 def debug_print(s):
     __print__(s, file=sys.stderr)
 
+
 def output_print(s):
     __print__(s, file=sys.stdout)
 
+
 __print__ = print
 print = None
-
 
 language_name = 'Bracketless'
 
@@ -123,6 +124,7 @@ class NodeType:
     Try = 34
     Hexadecimal = 35
     Binary = 36
+    Octal = 37
 
     def string(node_type):
         return {
@@ -159,7 +161,8 @@ class NodeType:
             NodeType.ForLoopExpression: "ForLoopExpression",
             NodeType.Try: "Try",
             NodeType.Hexadecimal: "Hexadecimal",
-            NodeType.Binary: "Binary"
+            NodeType.Binary: "Binary",
+            NodeType.Octal: "Octal"
         }[node_type]
 
     def is_expression(node_type):
@@ -573,6 +576,16 @@ class Builtins:
 
     builtins["bin"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": bin})
 
+    def oct(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if not NodeType.is_number(lst.type):
+            raise Exception
+
+        return Node(NodeType.Octal, oct(lst.value))
+
+
 class Error(Exception):  # TODO: Implement in own language
     def __init__(self, error_name, details):
         self.error_name = error_name
@@ -695,9 +708,12 @@ class File:
             "conditional_expression",
             [
                 (lambda elem_0: elem_0.type == NodeType.Statement),
-                (lambda elem_1: elem_1.type in [NodeType.Identifier, NodeType.String, NodeType.Integer, NodeType.List, NodeType.Function]),
-                (lambda elem_2: elem_2.type == NodeType.InfixOperator and not elem_2.value in ['==', '<', '>', '>=', '<=', '%']),
-                (lambda elem_3: elem_3.type in [NodeType.Identifier, NodeType.String, NodeType.Integer, NodeType.List, NodeType.Function]),
+                (lambda elem_1: elem_1.type in [NodeType.Identifier, NodeType.String, NodeType.Integer, NodeType.List,
+                                                NodeType.Function]),
+                (lambda elem_2: elem_2.type == NodeType.InfixOperator and not elem_2.value in ['==', '<', '>', '>=',
+                                                                                               '<=', '%']),
+                (lambda elem_3: elem_3.type in [NodeType.Identifier, NodeType.String, NodeType.Integer, NodeType.List,
+                                                NodeType.Function]),
             ],
             (lambda arr: Node(NodeType.ConditionalExpression, (arr[0].value, arr[1].value, arr[2].value))),
         ),
@@ -769,8 +785,10 @@ class File:
     def recognize_pattern(self, pattern_name, things, o):
         for pattern in self.recognize_patterns_dict[pattern_name]:
             pattern_list, pattern_xform = pattern
-            if len(things) >= o + len(pattern_list) and all([pattern_list[i](things[o + i]) for i in range(len(pattern_list))]):
-                return things[:o] + [pattern_xform(things[o:(o + len(pattern_list))])] + things[(o + len(pattern_list)):], True
+            if len(things) >= o + len(pattern_list) and all(
+                    [pattern_list[i](things[o + i]) for i in range(len(pattern_list))]):
+                return things[:o] + [pattern_xform(things[o:(o + len(pattern_list))])] + things[
+                                                                                         (o + len(pattern_list)):], True
         return things, False
 
     def repeatedly_transform_thing_list(self, things):
@@ -952,26 +970,40 @@ class File:
     #     return Node(NodeType.Integer, integer)
 
     def is_hex(self):
-        return self.slice(2) == '0x' and self.content[self.position + 2] in string.digits
+        return self.slice(2) == '0x' and self.content[
+            self.position + 2] in string.digits + 'AaBbCcDdEeFf'
 
     def parse_hex(self):
         hex_number = '0x'
         self.position += 2
 
-        while self.get() in string.digits:
+        while self.get() in string.digits + 'AaBbCcDdEeFf':
             hex_number += self.get()
             self.position += 1
 
         return Node(NodeType.Hexadecimal, hex_number)
 
+    def is_oct(self):
+        return self.slice(2) == '0o' and self.content[self.position + 2] in '01234567'
+
+    def parse_oct(self):
+        oct_number = '0o'
+        self.position += 2
+
+        while self.get() in '01234567':
+            oct_number += self.get()
+            self.position += 1
+
+        return Node(NodeType.Octal, oct_number)
+
     def is_bin(self):
-        return self.slice(2) == '0b' and self.content[self.position + 2] in string.digits
+        return self.slice(2) == '0b' and self.content[self.position + 2] in ['0', '1']
 
     def parse_bin(self):
         bin_number = '0b'
         self.position += 2
 
-        while self.get() in string.digits:
+        while self.get() in ['0', '1']:
             bin_number += self.get()
             self.position += 1
 
