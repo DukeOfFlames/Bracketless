@@ -9,6 +9,7 @@ visible_tests = [
 ]
 
 silent_tests = [
+    "double_negation",
     "list_indexing",
     "assignment",
     "scope_test",
