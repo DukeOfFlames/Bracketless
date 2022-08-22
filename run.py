@@ -9,6 +9,7 @@ visible_tests = [
 ]
 
 silent_tests = [
+    "if_test",
     "manual_factorial",
     "complex_list_literal",
     "runnable_list_literal",
@@ -29,7 +30,6 @@ silent_tests = [
 ]
 
 broken_tests = [
-    "if_test",
     "type_assignment",
     "brack",
     "for_test",
