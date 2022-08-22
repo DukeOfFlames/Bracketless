@@ -500,6 +500,9 @@ class Node:
         if self.type == NodeType.Integer:
             return self
 
+        if self.type == NodeType.Boolean:
+            return self
+
         raise Exception(
             f"Could not interpret Node of type {NodeType.string(self.type)}")
 
@@ -1025,6 +1028,7 @@ class File:
             (self.is_number, self.parse_number),
             (self.is_import_statement, self.parse_import_statement),
             (self.is_python_import_statement, self.parse_python_import_statement),
+            (self.is_boolean, self.parse_boolean),
             (self.is_identifier, self.parse_identifier),
             (self.is_prefix_operator, self.parse_prefix_operator),
             (self.is_postfix_operator, self.parse_postfix_operator),
@@ -1459,6 +1463,18 @@ class File:
         self.skip_useless()
         return Node(NodeType.Function,
                     {"type": FunctionType.External, "name": name, "arg_names": parameters, "body": body})
+
+    def is_boolean(self):
+        for s in ["True", "False"]:
+            if self.slice(len(s)) == s:
+                return True
+        return False
+
+    def parse_boolean(self):
+        for s in ["True", "False"]:
+            if self.slice(len(s)) == s:
+                self.position += len(s)
+                return Node(NodeType.Boolean, s == "True")
 
 
 def main(filename):
