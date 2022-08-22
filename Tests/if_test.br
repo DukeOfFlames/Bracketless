@@ -1,5 +1,7 @@
 START
-if true {
+°a = 0
+if True {
     a = 5
 }
+#drucke{a}
 END
