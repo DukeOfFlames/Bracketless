@@ -10,6 +10,7 @@ class TestType:
 visible_tests = []
 
 silent_tests = [
+    "manual_factorial",
     "complex_list_literal",
     "runnable_list_literal",
     "double_negation",

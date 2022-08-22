@@ -135,6 +135,8 @@ class NodeType:
     Hexadecimal = 35
     Binary = 36
     Octal = 37
+    IfStatement = 38
+    IfElseStatement = 39
 
     def string(node_type):
         return {
@@ -173,6 +175,8 @@ class NodeType:
             NodeType.Hexadecimal: "Hexadecimal",
             NodeType.Binary: "Binary",
             NodeType.Octal: "Octal",
+            NodeType.IfStatement: "IfStatement",
+            NodeType.IfElseStatement: "IfElseStatement",
         }[node_type]
 
     def is_expression(node_type):
@@ -333,6 +337,8 @@ class Node:
             return self.value
         elif self.type == NodeType.List:
             return "{" + ", ".join([node.representation() for node in self.value]) + "}"
+        elif self.type == NodeType.Boolean:
+            return "True" if self.value else "False"
         else:
             raise Exception
 
@@ -480,6 +486,9 @@ class Node:
                     return Node(
                         NodeType.Float, lhs_as_float.value**rhs_as_float.value
                     )
+            if op == "==":
+                if lhs.type == NodeType.Integer and rhs.type == NodeType.Integer:
+                    return Node(NodeType.Boolean, lhs.value == rhs.value)
             if op == ".":
                 if lhs.type == NodeType.Function and rhs.type == NodeType.Function:
 
@@ -508,6 +517,16 @@ class Node:
             raise Exception(
                 f"Could not interpret InfixOperation with ({lhs}, {op}, {rhs})"
             )
+
+        if self.type == NodeType.IfElseStatement:
+            predicate = self.value[0].interpret(execution_environment)
+            if predicate.type != NodeType.Boolean:
+                raise Exception
+            if predicate.value:
+                consequent = self.value[1].interpret(execution_environment)
+            else:
+                alternative = self.value[2].interpret(execution_environment)
+            return None
 
         if self.type == NodeType.Identifier:
             name = self.value
@@ -668,6 +687,57 @@ class Builtins:
             raise Exception
 
         return Node(NodeType.Octal, oct(lst.value))
+
+    def builtin_range(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        end = params[0]
+        if end.type != NodeType.Integer:
+            raise Exception
+        end = end.value
+        return Node(NodeType.List, [Node(NodeType.Integer, i) for i in range(end)])
+
+    builtins["range"] = Node(
+        NodeType.Function, {"type": FunctionType.Internal, "body": builtin_range}
+    )
+
+    def for_each(execution_environment, params):
+        if len(params) != 2:
+            raise Exception
+        lst, func = params
+        if lst.type != NodeType.List:
+            raise Exception
+        if func.type != NodeType.Function:
+            raise Exception
+
+        def run_func_on_element(elem):
+            with execution_environment:
+                return Node(
+                    NodeType.FunctionCallOrListIndexing, (func, [elem])
+                ).interpret(execution_environment)
+
+        return Node(NodeType.List, [run_func_on_element(elem) for elem in lst.value])
+        # return Node(NodeType.List, [Node(NodeType.FunctionCallOrListIndexing, (func, [elem])).interpret(execution_environment) for elem in lst.value])
+
+    builtins["for_each"] = Node(
+        NodeType.Function, {"type": FunctionType.Internal, "body": for_each}
+    )
+
+    def builtin_all(execution_environment, params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+        if lst.type != NodeType.List:
+            raise Exception
+        lst = lst.value
+        for elem in lst:
+            if elem.type != NodeType.Boolean:
+                raise Exception
+        return Node(NodeType.Boolean, all([elem.value for elem in lst]))
+
+    builtins["all"] = Node(
+        NodeType.Function, {"type": FunctionType.Internal, "body": builtin_all}
+    )
 
 
 class Error(Exception):  # TODO: Implement in own language
@@ -915,6 +985,35 @@ class File:
                 )
             ),
         ),
+        (
+            "if_statement",
+            [
+                (
+                    lambda elem_0: elem_0.type == NodeType.Statement
+                    and elem_0.value == "if"
+                ),
+                (lambda elem_1: NodeType.is_expression(elem_1.type)),
+                (lambda elem_2: NodeType.is_expression(elem_2.type)),
+            ],
+            (lambda arr: Node(NodeType.IfStatement, (arr[1], arr[2]))),
+        ),
+        (
+            "if_else_statement",
+            [
+                (
+                    lambda elem_0: elem_0.type == NodeType.Statement
+                    and elem_0.value == "if"
+                ),
+                (lambda elem_1: NodeType.is_expression(elem_1.type)),
+                (lambda elem_2: NodeType.is_expression(elem_2.type)),
+                (
+                    lambda elem_3: elem_3.type == NodeType.Statement
+                    and elem_3.value == "else"
+                ),
+                (lambda elem_4: NodeType.is_expression(elem_4.type)),
+            ],
+            (lambda arr: Node(NodeType.IfElseStatement, (arr[1], arr[2], arr[4]))),
+        ),
     ]
 
     recognize_patterns_dict = dict()
@@ -940,6 +1039,8 @@ class File:
     def repeatedly_transform_thing_list(self, things):
         # The order of this list is important because it dictates the precedence of different types of expressions
         recognize_list = [
+            "if_else_statement",
+            "if_statement",
             "function_call_or_list_indexing",
             "postfix_operation",
             "infix_operation",
@@ -1459,19 +1560,6 @@ class File:
         self.parse_block()
 
         return Node(NodeType.ForLoop, {"iterated_variable": var, "iterable": iter_})
-
-    def is_if(self):
-        return self.slice(2) == "if"
-
-    def parse_if_keyword(self):
-        if self.slice(2) != "if":
-            raise Exception
-        self.position += 2
-
-    def parse_if(self):
-        self.parse_if()
-        self.skip_useless()
-        ...
 
     def is_class(self):
         return self.slice(2) == "cl"
