@@ -1,7 +1,16 @@
 START
-°a = 0
-if True {
-    a = 5
+{
+    °a = 0
+    if True {
+        a = 5
+    }
+    #drucke{a}
 }
-#drucke{a}
+{
+    °a = 0
+    if False {
+        a = 5
+    }
+    #drucke{a}
+}
 END
