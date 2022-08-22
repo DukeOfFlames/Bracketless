@@ -1,0 +1,15 @@
+START
+
+°a = 5
+#drucke{a}
+
+°b = - 5
+#drucke{b}
+
+°c = - - 5
+#drucke{c}
+
+°d = - - - 5
+#drucke{d}
+
+END
