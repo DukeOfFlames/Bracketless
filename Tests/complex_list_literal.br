@@ -1,0 +1,13 @@
+START
+{
+    °a = 1
+    °list = {a,}
+    a = 2
+    #drucke{list{0}}
+}
+{
+    °a = 1
+    °list = {{a = 2},}
+    #drucke{a}
+}
+END
