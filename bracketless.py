@@ -518,6 +518,14 @@ class Node:
                 f"Could not interpret InfixOperation with ({lhs}, {op}, {rhs})"
             )
 
+        if self.type == NodeType.IfStatement:
+            predicate = self.value[0].interpret(execution_environment)
+            if predicate.type != NodeType.Boolean:
+                raise Exception
+            if predicate.value:
+                consequent = self.value[1].interpret(execution_environment)
+            return None
+
         if self.type == NodeType.IfElseStatement:
             predicate = self.value[0].interpret(execution_environment)
             if predicate.type != NodeType.Boolean:
