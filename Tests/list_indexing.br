@@ -1,0 +1,11 @@
+START
+
+°l = 0
+
+l = {1, 4, 9}
+#drucke{l{1}}
+
+l = fn f{x} { -> {x + 1} ^ 2 }
+#drucke{l{1}}
+
+END

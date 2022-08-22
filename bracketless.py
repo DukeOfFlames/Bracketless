@@ -371,38 +371,50 @@ class Node:
             return value
 
         if self.type == NodeType.FunctionCallOrListIndexing:
-            func_expr = self.value[0]
-            func_arg_values = [
+            func_or_list_expr = self.value[0]
+            arg_values = [
                 value.interpret(execution_environment) for value in self.value[1]
             ]
-            func = func_expr.interpret(execution_environment)
-            if not func.type == NodeType.Function:
-                raise Exception(
-                    f"Cannot interpret FunctionCallOrListIndexing because {func} is not a function"
-                )
-            func = func.value
-            if func["type"] == FunctionType.External:
-                func_body = func["body"]
-                func_arg_names = [name for (name, type) in func["arg_names"]]
-                with execution_environment:
-                    if len(func_arg_names) != len(func_arg_values):
-                        raise Exception
-                    for i in range(len(func_arg_names)):
-                        execution_environment.define_variable(
-                            func_arg_names[i], func_arg_values[i]
-                        )
-                    try:
-                        func_body.interpret(execution_environment)
-                    except Return as r:
-                        return_value = r.return_value
-                    else:
-                        raise Exception("Function body did not return any value")
-                return return_value
-            elif func["type"] == FunctionType.Internal:
-                func_body = func["body"]
-                return func_body(execution_environment, func_arg_values)
-            else:
-                raise Exception
+            func_or_list = func_or_list_expr.interpret(execution_environment)
+            if func_or_list.type == NodeType.List:
+                lst = func_or_list
+                lst = lst.value
+                if len(arg_values) != 1:
+                    raise Exception
+                index = arg_values[0]
+                if index.type != NodeType.Integer:
+                    raise Exception
+                index = index.value
+                return lst[index]
+            if func_or_list.type == NodeType.Function:
+                func = func_or_list
+                func_arg_values = arg_values
+                func = func.value
+                if func["type"] == FunctionType.External:
+                    func_body = func["body"]
+                    func_arg_names = [name for (name, type) in func["arg_names"]]
+                    with execution_environment:
+                        if len(func_arg_names) != len(func_arg_values):
+                            raise Exception
+                        for i in range(len(func_arg_names)):
+                            execution_environment.define_variable(
+                                func_arg_names[i], func_arg_values[i]
+                            )
+                        try:
+                            func_body.interpret(execution_environment)
+                        except Return as r:
+                            return_value = r.return_value
+                        else:
+                            raise Exception("Function body did not return any value")
+                    return return_value
+                elif func["type"] == FunctionType.Internal:
+                    func_body = func["body"]
+                    return func_body(execution_environment, func_arg_values)
+                else:
+                    raise Exception
+            raise Exception(
+                f"Cannot interpret FunctionCallOrListIndexing because {func_or_list} is neither a function nor a list"
+            )
 
         if self.type == NodeType.Class:
             class_name = self.value[0]
