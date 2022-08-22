@@ -345,10 +345,6 @@ class Node:
 
         if self.type == NodeType.FunctionCall:
             func_expr = self.value[0]
-            if type(self.value[1]) == Node:
-                debug_print("!!!")
-                debug_print(self)
-                raise Exception
             func_arg_values = [
                 value.interpret(execution_environment)
                 for value in self.value[1]
