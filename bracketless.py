@@ -521,7 +521,16 @@ class Node:
             execution_environment.define_variable(self.value["name"], self)
             return self
 
-        if self.type in [NodeType.String, NodeType.Integer, NodeType.List]:
+        if self.type == NodeType.List:
+            return Node(
+                NodeType.List,
+                [elem.interpret(execution_environment) for elem in self.value],
+            )
+
+        if self.type == NodeType.String:
+            return self
+
+        if self.type == NodeType.Integer:
             return self
 
         raise Exception(
