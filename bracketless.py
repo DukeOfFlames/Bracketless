@@ -110,7 +110,7 @@ class NodeType:
     WhileLoop = 20  # WIP
     Class = 21  # WIP
     Boolean = 22  # WIP
-    FunctionCall = 23
+    FunctionCallOrListIndexing = 23
     PrefixOperation = 24
     PostfixOperation = 25
     InfixOperation = 26
@@ -149,7 +149,7 @@ class NodeType:
             NodeType.WhileLoop: "WhileLoop",
             NodeType.Class: "Class",
             NodeType.Boolean: "Boolean",
-            NodeType.FunctionCall: "FunctionCall",
+            NodeType.FunctionCallOrListIndexing: "FunctionCallOrListIndexing",
             NodeType.PrefixOperation: "PrefixOperation",
             NodeType.PostfixOperation: "PostfixOperation",
             NodeType.InfixOperation: "InfixOperation",
@@ -170,7 +170,7 @@ class NodeType:
             NodeType.Identifier, NodeType.Integer, NodeType.Block,
             NodeType.List, NodeType.Assignment, NodeType.String,
             NodeType.ConditionalExpression, NodeType.Function, NodeType.Class,
-            NodeType.Boolean, NodeType.FunctionCall, NodeType.PrefixOperation,
+            NodeType.Boolean, NodeType.FunctionCallOrListIndexing, NodeType.PrefixOperation,
             NodeType.PostfixOperation, NodeType.InfixOperation,
             NodeType.DeclarationAssignment,
             NodeType.BuiltinIdentifier,
@@ -343,7 +343,7 @@ class Node:
             execution_environment.define_variable(name, value)
             return value
 
-        if self.type == NodeType.FunctionCall:
+        if self.type == NodeType.FunctionCallOrListIndexing:
             func_expr = self.value[0]
             func_arg_values = [
                 value.interpret(execution_environment)
@@ -351,7 +351,7 @@ class Node:
             ]
             func = func_expr.interpret(execution_environment)
             if not func.type == NodeType.Function:
-                raise Exception(f"Cannot interpret FunctionCall because {func} is not a function")
+                raise Exception(f"Cannot interpret FunctionCallOrListIndexing because {func} is not a function")
             func = func.value
             if func["type"] == FunctionType.External:
                 func_body = func["body"]
@@ -440,8 +440,8 @@ class Node:
                             raise Exception
                         param = params[0]
                         with execution_environment:
-                            return Node(NodeType.FunctionCall,
-                                        (lhs, [Node(NodeType.FunctionCall, (rhs, [param]))])).interpret(
+                            return Node(NodeType.FunctionCallOrListIndexing,
+                                        (lhs, [Node(NodeType.FunctionCallOrListIndexing, (rhs, [param]))])).interpret(
                                 execution_environment)
 
                     return Node(NodeType.Function, {"type": FunctionType.Internal, "body": combined_func})
@@ -755,20 +755,20 @@ class File:
             (lambda arr: Node(NodeType.DeclarationAssignment, arr[1].value)),
         ),
         (
-            "function_call",
+            "function_call_or_list_indexing",
             [
                 (lambda elem_0: NodeType.is_expression(elem_0.type)),
                 (lambda elem_1: elem_1.type == NodeType.Block and len(elem_1.value) == 1),
             ],
-            (lambda arr: Node(NodeType.FunctionCall, (arr[0], [arr[1].value[0]]))),
+            (lambda arr: Node(NodeType.FunctionCallOrListIndexing, (arr[0], [arr[1].value[0]]))),
         ),
         (
-            "function_call",
+            "function_call_or_list_indexing",
             [
                 (lambda elem_0: NodeType.is_expression(elem_0.type)),
                 (lambda elem_1: elem_1.type == NodeType.List),
             ],
-            (lambda arr: Node(NodeType.FunctionCall, (arr[0], arr[1].value))),
+            (lambda arr: Node(NodeType.FunctionCallOrListIndexing, (arr[0], arr[1].value))),
         ),
     ]
 
@@ -790,7 +790,7 @@ class File:
     def repeatedly_transform_thing_list(self, things):
         # The order of this list is important because it dictates the precedence of different types of expressions
         recognize_list = [
-            "function_call",
+            "function_call_or_list_indexing",
             "postfix_operation",
             "infix_operation",
             "conditional_expression",
