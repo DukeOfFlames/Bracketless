@@ -7,36 +7,14 @@ class TestType:
     Visible = 2
 
 
-visible_tests = []
+with open("visible.runconfig", "rt") as f_in:
+    visible_tests = f_in.read().split("\n")
 
-silent_tests = [
-    "if_test",
-    "manual_factorial",
-    "complex_list_literal",
-    "runnable_list_literal",
-    "double_negation",
-    "list_indexing",
-    "assignment",
-    "scope_test",
-    "comments",
-    "functions",
-    "declarations",
-    "dot",
-    "factorial",
-    "drucke",
-    "abc",
-    "builtin_functions",
-    "negative_numbers",
-    "multiple_parameters",
-]
+with open("silent.runconfig", "rt") as f_in:
+    silent_tests = f_in.read().split("\n")
 
-broken_tests = [
-    "type_assignment",
-    "brack",
-    "for_test",
-    "try",
-    "library_imports",
-]
+with open("broken.runconfig", "rt") as f_in:
+    broken_tests = f_in.read().split("\n")
 
 tests = []
 for (test_type, lst) in [
@@ -47,6 +25,8 @@ for (test_type, lst) in [
     tests += [(test_type, test_name) for test_name in lst]
 
 for (test_type, test_name) in tests:
+    if test_name == "":
+        continue
     if test_type == TestType.Broken:
         continue
     print(f"Running test: {test_name}")
