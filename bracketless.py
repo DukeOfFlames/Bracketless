@@ -736,15 +736,15 @@ class Builtins:
             raise Exception
         if func.type != NodeType.Function:
             raise Exception
-
-        def run_func_on_element(elem):
-            with execution_environment:
-                return Node(
-                    NodeType.FunctionCallOrListIndexing, (func, [elem])
-                ).interpret(execution_environment)
-
-        return Node(NodeType.List, [run_func_on_element(elem) for elem in lst.value])
-        # return Node(NodeType.List, [Node(NodeType.FunctionCallOrListIndexing, (func, [elem])).interpret(execution_environment) for elem in lst.value])
+        return Node(
+            NodeType.List,
+            [
+                Node(NodeType.FunctionCallOrListIndexing, (func, [elem])).interpret(
+                    execution_environment
+                )
+                for elem in lst.value
+            ],
+        )
 
     builtins["for_each"] = Node(
         NodeType.Function, {"type": FunctionType.Internal, "body": for_each}
