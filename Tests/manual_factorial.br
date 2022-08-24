@@ -1,9 +1,5 @@
 START
 fn factorial{n} { if {n == 0} { -> 1 } else { -> n * factorial{n - 1} } }
-{
-    °range = #range{10}
-    fn f{n} { -> {factorial{n} - n!} == 0 }
-    °success = #all{#for_each{range, f}}
-    #drucke{success}
-}
+°success = #all{#for_each{{#range{10}}, fn {n} { -> {factorial{n} - n!} == 0 }}}
+#drucke{success}
 END
