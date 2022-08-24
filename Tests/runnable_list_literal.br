@@ -7,7 +7,7 @@ START
 }
 {
     °a = 1
-    °list = {{a = 2},}
+    °list = {a = 2,}
     #drucke{a}
 }
 END

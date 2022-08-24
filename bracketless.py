@@ -762,8 +762,19 @@ class File:
             i = 0
             list_elements = []
             while True:
-                list_elements.append(things[i])
-                i += 1
+                element_things = []
+                while True:
+                    element_things.append(things[i])
+                    i += 1
+                    if i == len(things):
+                        break
+                    if things[i].type == NodeType.Comma:
+                        break
+                element_things = self.repeatedly_transform_thing_list(element_things)
+                if len(element_things) != 1:
+                    raise Exception
+                element = element_things[0]
+                list_elements.append(element)
                 if i == len(things):
                     break
                 if things[i].type != NodeType.Comma:
