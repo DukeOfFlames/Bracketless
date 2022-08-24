@@ -1,0 +1,4 @@
+START
+fn f{} { #drucke{"Hello, World!"} }
+f{}
+END
