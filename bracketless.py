@@ -411,7 +411,7 @@ class Node:
                         except Return as r:
                             return_value = r.return_value
                         else:
-                            raise Exception("Function body did not return any value")
+                            return_value = None
                     return return_value
                 elif func["type"] == FunctionType.Internal:
                     func_body = func["body"]
@@ -995,6 +995,17 @@ class File:
                 (lambda elem_1: elem_1.type == NodeType.Assignment),
             ],
             (lambda arr: Node(NodeType.DeclarationAssignment, arr[1].value)),
+        ),
+        (
+            "function_call_or_list_indexing",
+            [
+                (lambda elem_0: NodeType.is_expression(elem_0.type)),
+                (
+                    lambda elem_1: elem_1.type == NodeType.Block
+                    and len(elem_1.value) == 0
+                ),
+            ],
+            (lambda arr: Node(NodeType.FunctionCallOrListIndexing, (arr[0], []))),
         ),
         (
             "function_call_or_list_indexing",
