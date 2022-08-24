@@ -545,8 +545,24 @@ class Node:
             return Builtins.builtins[name]
 
         if self.type == NodeType.Function:
-            execution_environment.define_variable(self.value["name"], self)
-            return self
+            if "name" in self.value.keys():
+                execution_environment.define_variable(self.value["name"], self)
+            if self.value["type"] == FunctionType.Internal:
+                return Node(
+                    NodeType.Function,
+                    {"type": FunctionType.Internal, "body": self.value["body"]},
+                )
+            elif self.value["type"] == FunctionType.External:
+                return Node(
+                    NodeType.Function,
+                    {
+                        "type": FunctionType.External,
+                        "arg_names": self.value["arg_names"],
+                        "body": self.value["body"],
+                    },
+                )  # Forget `self.value["name"]`
+            else:
+                raise Exception
 
         if self.type == NodeType.List:
             return Node(
@@ -1608,6 +1624,9 @@ class File:
             raise Exception
         self.position += 2
 
+    def is_function_name(self):
+        return self.is_identifier()
+
     def parse_function_name(self):
         if not self.is_identifier():
             raise Exception
@@ -1657,23 +1676,18 @@ class File:
         return self.parse_block()
 
     def parse_function(self):
+        res = dict()
+        res["type"] = FunctionType.External
         self.parse_function_keyword()
         self.skip_useless()
-        name = self.parse_function_name()
+        if self.is_function_name():
+            res["name"] = self.parse_function_name()
+            self.skip_useless()
+        res["arg_names"] = self.parse_function_parameter_list()
         self.skip_useless()
-        parameters = self.parse_function_parameter_list()
+        res["body"] = self.parse_function_body()
         self.skip_useless()
-        body = self.parse_function_body()
-        self.skip_useless()
-        return Node(
-            NodeType.Function,
-            {
-                "type": FunctionType.External,
-                "name": name,
-                "arg_names": parameters,
-                "body": body,
-            },
-        )
+        return Node(NodeType.Function, res)
 
     def is_boolean(self):
         for s in ["True", "False"]:
