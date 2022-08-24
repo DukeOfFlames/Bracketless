@@ -1,0 +1,21 @@
+START
+
+°dot = fn {f} { -> fn {g} { -> f . g } }
+°square = fn {x} { -> x ^ 2 }
+°add = fn {x} { -> fn {y} { -> x + y } }
+°res = {dot . dot}{square}{add}{3}{4} § {dot . dot} = dot{dot}{dot}
+#drucke{res}
+
+§§§
+  (.) f g x
+= f (g x)
+
+  (.) (.) (.) f g x y
+= (.) ((.) f) g x y
+= ((.) f) (g x) y
+= (.) f (g x) y
+= f ((g x) y)
+= f (g x y)
+§§§
+
+END
