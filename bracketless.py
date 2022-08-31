@@ -86,112 +86,6 @@ print = None
 language_name = 'Bracketless'
 
 
-class NodeType:
-    Identifier = 0
-    Integer = 1
-    PostfixOperator = 2
-    InfixOperator = 3
-    OpeningCurly = 4
-    ClosingCurly = 5
-    Start = 6
-    End = 7
-    Block = 8
-    # InternalFunctionPrefix = 9
-    Comma = 10
-    PrefixOperator = 11
-    # Quote = 12
-    List = 13
-    Assignment = 14
-    String = 15
-    ConditionalExpression = 16  # WIP
-    Statement = 17
-    Function = 18
-    ForLoop = 19  # WIP
-    WhileLoop = 20  # WIP
-    Class = 21  # WIP
-    Boolean = 22  # WIP
-    FunctionCallOrListIndexing = 23
-    PrefixOperation = 24
-    PostfixOperation = 25
-    InfixOperation = 26
-    Colon = 27
-    Type = 28
-    # InternalFunction = 29
-    DeclarationAssignment = 30
-    BuiltinIdentifier = 31
-    Float = 32
-    ForLoopExpression = 33
-    Try = 34
-    Hexadecimal = 35
-    Binary = 36
-    Octal = 37
-    IfStatement = 38
-    IfElseStatement = 39
-
-    def string(node_type):
-        return {
-            NodeType.Identifier: "Identifier",
-            NodeType.Integer: "Integer",
-            NodeType.PostfixOperator: "PostfixOperator",
-            NodeType.InfixOperator: "InfixOperator",
-            NodeType.OpeningCurly: "OpeningCurly",
-            NodeType.ClosingCurly: "ClosingCurly",
-            NodeType.Start: "Start",
-            NodeType.End: "End",
-            NodeType.Block: "Block",
-            NodeType.Comma: "Comma",
-            NodeType.PrefixOperator: "PrefixOperator",
-            NodeType.List: "List",
-            NodeType.Assignment: "Assignment",
-            NodeType.String: "String",
-            NodeType.ConditionalExpression: "ConditionalExpression",
-            NodeType.Statement: "Statement",
-            NodeType.Function: "Function",
-            NodeType.ForLoop: "ForLoop",
-            NodeType.WhileLoop: "WhileLoop",
-            NodeType.Class: "Class",
-            NodeType.Boolean: "Boolean",
-            NodeType.FunctionCallOrListIndexing: "FunctionCallOrListIndexing",
-            NodeType.PrefixOperation: "PrefixOperation",
-            NodeType.PostfixOperation: "PostfixOperation",
-            NodeType.InfixOperation: "InfixOperation",
-            NodeType.Colon: "Colon",
-            NodeType.Type: "Type",
-            NodeType.DeclarationAssignment: "DeclarationAssignment",
-            NodeType.BuiltinIdentifier: "BuiltinIdentifier",
-            NodeType.Float: "Float",
-            NodeType.ForLoopExpression: "ForLoopExpression",
-            NodeType.Try: "Try",
-            NodeType.Hexadecimal: "Hexadecimal",
-            NodeType.Binary: "Binary",
-            NodeType.Octal: "Octal",
-            NodeType.IfStatement: "IfStatement",
-            NodeType.IfElseStatement: "IfElseStatement",
-        }[node_type]
-
-    def is_expression(node_type):
-        return node_type in [
-            NodeType.Identifier, NodeType.Integer, NodeType.Block,
-            NodeType.List, NodeType.Assignment, NodeType.String,
-            NodeType.ConditionalExpression, NodeType.Function, NodeType.Class,
-            NodeType.Boolean, NodeType.FunctionCallOrListIndexing, NodeType.PrefixOperation,
-            NodeType.PostfixOperation, NodeType.InfixOperation,
-            NodeType.DeclarationAssignment,
-            NodeType.BuiltinIdentifier,
-            NodeType.Float
-        ]
-
-    def is_iterable(node_type):
-        return node_type in [
-            NodeType.String, NodeType.List
-        ]
-
-    def is_number(node_type):
-        return node_type in [
-            NodeType.Integer, NodeType.Float
-        ]
-
-
 class FunctionType:
     External = 0
     Internal = 1
@@ -255,6 +149,111 @@ class Return(Exception):
 
 
 class Node:
+    class Type:
+        Identifier = 0
+        Integer = 1
+        PostfixOperator = 2
+        InfixOperator = 3
+        OpeningCurly = 4
+        ClosingCurly = 5
+        Start = 6
+        End = 7
+        Block = 8
+        # InternalFunctionPrefix = 9
+        Comma = 10
+        PrefixOperator = 11
+        # Quote = 12
+        List = 13
+        Assignment = 14
+        String = 15
+        ConditionalExpression = 16  # WIP
+        Statement = 17
+        Function = 18
+        ForLoop = 19  # WIP
+        WhileLoop = 20  # WIP
+        Class = 21  # WIP
+        Boolean = 22  # WIP
+        FunctionCallOrListIndexing = 23
+        PrefixOperation = 24
+        PostfixOperation = 25
+        InfixOperation = 26
+        Colon = 27
+        Type = 28
+        # InternalFunction = 29
+        DeclarationAssignment = 30
+        BuiltinIdentifier = 31
+        Float = 32
+        ForLoopExpression = 33
+        Try = 34
+        Hexadecimal = 35
+        Binary = 36
+        Octal = 37
+        IfStatement = 38
+        IfElseStatement = 39
+
+        def string(node_type):
+            return {
+                Node.Type.Identifier: "Identifier",
+                Node.Type.Integer: "Integer",
+                Node.Type.PostfixOperator: "PostfixOperator",
+                Node.Type.InfixOperator: "InfixOperator",
+                Node.Type.OpeningCurly: "OpeningCurly",
+                Node.Type.ClosingCurly: "ClosingCurly",
+                Node.Type.Start: "Start",
+                Node.Type.End: "End",
+                Node.Type.Block: "Block",
+                Node.Type.Comma: "Comma",
+                Node.Type.PrefixOperator: "PrefixOperator",
+                Node.Type.List: "List",
+                Node.Type.Assignment: "Assignment",
+                Node.Type.String: "String",
+                Node.Type.ConditionalExpression: "ConditionalExpression",
+                Node.Type.Statement: "Statement",
+                Node.Type.Function: "Function",
+                Node.Type.ForLoop: "ForLoop",
+                Node.Type.WhileLoop: "WhileLoop",
+                Node.Type.Class: "Class",
+                Node.Type.Boolean: "Boolean",
+                Node.Type.FunctionCallOrListIndexing: "FunctionCallOrListIndexing",
+                Node.Type.PrefixOperation: "PrefixOperation",
+                Node.Type.PostfixOperation: "PostfixOperation",
+                Node.Type.InfixOperation: "InfixOperation",
+                Node.Type.Colon: "Colon",
+                Node.Type.Type: "Type",
+                Node.Type.DeclarationAssignment: "DeclarationAssignment",
+                Node.Type.BuiltinIdentifier: "BuiltinIdentifier",
+                Node.Type.Float: "Float",
+                Node.Type.ForLoopExpression: "ForLoopExpression",
+                Node.Type.Try: "Try",
+                Node.Type.Hexadecimal: "Hexadecimal",
+                Node.Type.Binary: "Binary",
+                Node.Type.Octal: "Octal",
+                Node.Type.IfStatement: "IfStatement",
+                Node.Type.IfElseStatement: "IfElseStatement",
+            }[node_type]
+
+        def is_expression(node_type):
+            return node_type in [
+                Node.Type.Identifier, Node.Type.Integer, Node.Type.Block,
+                Node.Type.List, Node.Type.Assignment, Node.Type.String,
+                Node.Type.ConditionalExpression, Node.Type.Function, Node.Type.Class,
+                Node.Type.Boolean, Node.Type.FunctionCallOrListIndexing, Node.Type.PrefixOperation,
+                Node.Type.PostfixOperation, Node.Type.InfixOperation,
+                Node.Type.DeclarationAssignment,
+                Node.Type.BuiltinIdentifier,
+                Node.Type.Float
+            ]
+
+        def is_iterable(node_type):
+            return node_type in [
+                Node.Type.String, Node.Type.List
+            ]
+
+        def is_number(node_type):
+            return node_type in [
+                Node.Type.Integer, Node.Type.Float
+            ]
+
     def __init__(self, type, value):
         self.type = type
         self.value = value
@@ -274,12 +273,12 @@ class Node:
             outline_value_repr = []
 
         if short_toggle:
-            return [(f"{NodeType.string(self.type)}:", 0),
+            return [(f"{Node.Type.string(self.type)}:", 0),
                     (f"{inline_value_repr}", 2)] \
                    + outline_value_repr
         else:
             return [("Node:", 0),
-                    (f"Type = {NodeType.string(self.type)}", 2),
+                    (f"Type = {Node.Type.string(self.type)}", 2),
                     (f"Value = {inline_value_repr}", 2)] \
                    + outline_value_repr
 
@@ -298,35 +297,35 @@ class Node:
         return f"{self:s}"
 
     def representation(self):
-        if self.type == NodeType.Integer:
+        if self.type == Node.Type.Integer:
             return str(self.value)
-        elif self.type == NodeType.Float:
+        elif self.type == Node.Type.Float:
             return str(self.value)
-        elif self.type == NodeType.String:
+        elif self.type == Node.Type.String:
             return "\"" + repr(self.value)[1:-1] + "\""
-        elif self.type == NodeType.Hexadecimal:
+        elif self.type == Node.Type.Hexadecimal:
             return self.value
-        elif self.type == NodeType.Binary:
+        elif self.type == Node.Type.Binary:
             return self.value
-        elif self.type == NodeType.List:
+        elif self.type == Node.Type.List:
             return "{" + ", ".join([node.representation() for node in self.value]) + "}"
-        elif self.type == NodeType.Boolean:
+        elif self.type == Node.Type.Boolean:
             return "True" if self.value else "False"
         else:
             raise Exception
 
     def convert_to_float(self):
-        if self.type == NodeType.Float:
+        if self.type == Node.Type.Float:
             return self
-        if self.type == NodeType.Integer:
-            return Node(NodeType.Float, self.value)
+        if self.type == Node.Type.Integer:
+            return Node(Node.Type.Float, self.value)
         return None
 
     def interpret(self, execution_environment):
 
         # execution_environment.debug_print()
 
-        if self.type == NodeType.Block:
+        if self.type == Node.Type.Block:
             if len(self.value) != 1:
                 with execution_environment:
                     for thing in self.value:
@@ -337,36 +336,36 @@ class Node:
             else:
                 return self.value[0].interpret(execution_environment)
 
-        if self.type == NodeType.Assignment:
+        if self.type == Node.Type.Assignment:
             name = self.value[0]
             value = self.value[1].interpret(execution_environment)
             execution_environment.set_variable(name, value)
             return value
 
-        if self.type == NodeType.DeclarationAssignment:
+        if self.type == Node.Type.DeclarationAssignment:
             name = self.value[0]
             value = self.value[1].interpret(execution_environment)
             execution_environment.define_variable(name, value)
             return value
 
-        if self.type == NodeType.FunctionCallOrListIndexing:
+        if self.type == Node.Type.FunctionCallOrListIndexing:
             func_or_list_expr = self.value[0]
             arg_values = [
                 value.interpret(execution_environment)
                 for value in self.value[1]
             ]
             func_or_list = func_or_list_expr.interpret(execution_environment)
-            if func_or_list.type == NodeType.List:
+            if func_or_list.type == Node.Type.List:
                 lst = func_or_list
                 lst = lst.value
                 if len(arg_values) != 1:
                     raise Exception
                 index = arg_values[0]
-                if index.type != NodeType.Integer:
+                if index.type != Node.Type.Integer:
                     raise Exception
                 index = index.value
                 return lst[index]
-            if func_or_list.type == NodeType.Function:
+            if func_or_list.type == Node.Type.Function:
                 func = func_or_list
                 func_arg_values = arg_values
                 func = func.value
@@ -393,7 +392,7 @@ class Node:
                     raise Exception
             raise Exception(f"Cannot interpret FunctionCallOrListIndexing because {func_or_list} is neither a function nor a list")
 
-        if self.type == NodeType.Class:
+        if self.type == Node.Type.Class:
             class_name = self.value[0]
             class_functions = [
                 value.interpret(execution_environment)
@@ -401,85 +400,85 @@ class Node:
             ]
             class_ = execution_environment.get_variable(class_name).value
 
-        if self.type == NodeType.PrefixOperation:
+        if self.type == Node.Type.PrefixOperation:
             op = self.value[0]
             v = self.value[1].interpret(execution_environment)
             if op == "->":
                 raise Return(v)
             if op == '-':
-                if v.type == NodeType.Integer:
-                    return Node(NodeType.Integer, - v.value)
+                if v.type == Node.Type.Integer:
+                    return Node(Node.Type.Integer, - v.value)
                 v_as_float = v.convert_to_float()
                 if v_as_float != None:
-                    return Node(NodeType.Float, - v.value)
+                    return Node(Node.Type.Float, - v.value)
             raise Exception(
                 f"Could not interpret PrefixOperation with {self.value}")
 
-        if self.type == NodeType.PostfixOperation:
+        if self.type == Node.Type.PostfixOperation:
             v = self.value[0].interpret(execution_environment)
             op = self.value[1]
             if op == '!':
-                if v.type == NodeType.Integer:
-                    return Node(NodeType.Integer, factorial(v.value))
+                if v.type == Node.Type.Integer:
+                    return Node(Node.Type.Integer, factorial(v.value))
             if op == '?':
                 v_as_float = v.convert_to_float()
                 if v_as_float != None:
-                    return Node(NodeType.Float, inverse_factorial(v_as_float.value))
+                    return Node(Node.Type.Float, inverse_factorial(v_as_float.value))
             raise Exception(f"Could not interpret PostfixOperation with {self.value}")
 
-        if self.type == NodeType.InfixOperation:
+        if self.type == Node.Type.InfixOperation:
             lhs = self.value[0].interpret(execution_environment)
             op = self.value[1]
             rhs = self.value[2].interpret(execution_environment)
             if op in ['+', '-', '*']:
                 func = {'+': (lambda x, y: x + y), '-': (lambda x, y: x - y), '*': (lambda x, y: x * y)}[op]
-                if lhs.type == NodeType.Integer and rhs.type == NodeType.Integer:
-                    return Node(NodeType.Integer, func(lhs.value, rhs.value))
+                if lhs.type == Node.Type.Integer and rhs.type == Node.Type.Integer:
+                    return Node(Node.Type.Integer, func(lhs.value, rhs.value))
                 lhs_as_float = lhs.convert_to_float()
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
-                    return Node(NodeType.Float, func(lhs_as_float.value, rhs_as_float.value))
+                    return Node(Node.Type.Float, func(lhs_as_float.value, rhs_as_float.value))
             if op == '/':
                 lhs_as_float = lhs.convert_to_float()
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
-                    return Node(NodeType.Float, lhs_as_float.value / rhs_as_float.value)
+                    return Node(Node.Type.Float, lhs_as_float.value / rhs_as_float.value)
             if op == '^':
-                if lhs.type == NodeType.Integer and rhs.type == NodeType.Integer:
-                    return Node(NodeType.Integer, lhs.value ** rhs.value)
+                if lhs.type == Node.Type.Integer and rhs.type == Node.Type.Integer:
+                    return Node(Node.Type.Integer, lhs.value ** rhs.value)
                 lhs_as_float = lhs.convert_to_float()
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
-                    return Node(NodeType.Float, lhs_as_float.value ** rhs_as_float.value)
+                    return Node(Node.Type.Float, lhs_as_float.value ** rhs_as_float.value)
             if op == "==":
-                if lhs.type == NodeType.Integer and rhs.type == NodeType.Integer:
-                    return Node(NodeType.Boolean, lhs.value == rhs.value)
+                if lhs.type == Node.Type.Integer and rhs.type == Node.Type.Integer:
+                    return Node(Node.Type.Boolean, lhs.value == rhs.value)
             if op == '.':
-                if lhs.type == NodeType.Function and rhs.type == NodeType.Function:
+                if lhs.type == Node.Type.Function and rhs.type == Node.Type.Function:
                     def combined_func(execution_environment, params):
                         if len(params) != 1:
                             raise Exception
                         param = params[0]
                         with execution_environment:
-                            return Node(NodeType.FunctionCallOrListIndexing,
-                                        (lhs, [Node(NodeType.FunctionCallOrListIndexing, (rhs, [param]))])).interpret(
+                            return Node(Node.Type.FunctionCallOrListIndexing,
+                                        (lhs, [Node(Node.Type.FunctionCallOrListIndexing, (rhs, [param]))])).interpret(
                                 execution_environment)
 
-                    return Node(NodeType.Function, {"type": FunctionType.Internal, "body": combined_func})
+                    return Node(Node.Type.Function, {"type": FunctionType.Internal, "body": combined_func})
             raise Exception(
                 f"Could not interpret InfixOperation with ({lhs}, {op}, {rhs})")
 
-        if self.type == NodeType.IfStatement:
+        if self.type == Node.Type.IfStatement:
             predicate = self.value[0].interpret(execution_environment)
-            if predicate.type != NodeType.Boolean:
+            if predicate.type != Node.Type.Boolean:
                 raise Exception
             if predicate.value:
                 consequent = self.value[1].interpret(execution_environment)
             return None
 
-        if self.type == NodeType.IfElseStatement:
+        if self.type == Node.Type.IfElseStatement:
             predicate = self.value[0].interpret(execution_environment)
-            if predicate.type != NodeType.Boolean:
+            if predicate.type != Node.Type.Boolean:
                 raise Exception
             if predicate.value:
                 consequent = self.value[1].interpret(execution_environment)
@@ -487,38 +486,38 @@ class Node:
                 alternative = self.value[2].interpret(execution_environment)
             return None
 
-        if self.type == NodeType.Identifier:
+        if self.type == Node.Type.Identifier:
             name = self.value
             return execution_environment.get_variable(name)
 
-        if self.type == NodeType.BuiltinIdentifier:
+        if self.type == Node.Type.BuiltinIdentifier:
             name = self.value
             return Builtins.builtins[name]
 
-        if self.type == NodeType.Function:
+        if self.type == Node.Type.Function:
             if "name" in self.value.keys():
                 execution_environment.define_variable(self.value["name"], self)
             if self.value["type"] == FunctionType.Internal:
-                return Node(NodeType.Function, {"type": FunctionType.Internal, "body": self.value["body"]})
+                return Node(Node.Type.Function, {"type": FunctionType.Internal, "body": self.value["body"]})
             elif self.value["type"] == FunctionType.External:
-                return Node(NodeType.Function, {"type": FunctionType.External, "arg_names": self.value["arg_names"], "body": self.value["body"]}) # Forget `self.value["name"]`
+                return Node(Node.Type.Function, {"type": FunctionType.External, "arg_names": self.value["arg_names"], "body": self.value["body"]}) # Forget `self.value["name"]`
             else:
                 raise Exception
 
-        if self.type == NodeType.List:
-            return Node(NodeType.List, [elem.interpret(execution_environment) for elem in self.value])
+        if self.type == Node.Type.List:
+            return Node(Node.Type.List, [elem.interpret(execution_environment) for elem in self.value])
 
-        if self.type == NodeType.String:
+        if self.type == Node.Type.String:
             return self
 
-        if self.type == NodeType.Integer:
+        if self.type == Node.Type.Integer:
             return self
 
-        if self.type == NodeType.Boolean:
+        if self.type == Node.Type.Boolean:
             return self
 
         raise Exception(
-            f"Could not interpret Node of type {NodeType.string(self.type)}")
+            f"Could not interpret Node of type {Node.Type.string(self.type)}")
 
 
 class Builtins:
@@ -528,149 +527,149 @@ class Builtins:
         for param in params:
             output_print(param.representation())
 
-    builtins["drucke"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": drucke})
+    builtins["drucke"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": drucke})
 
     def max(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == NodeType.List:
+        if not lst.type == Node.Type.List:
             raise Exception
-        if not all([node.type == NodeType.Integer for node in lst.value]):
+        if not all([node.type == Node.Type.Integer for node in lst.value]):
             raise Exception
-        return Node(NodeType.Integer, max([node.value for node in lst.value]))
+        return Node(Node.Type.Integer, max([node.value for node in lst.value]))
 
-    builtins["max"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": max})
+    builtins["max"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": max})
 
     def min(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == NodeType.List:
+        if not lst.type == Node.Type.List:
             raise Exception
-        if not all([node.type == NodeType.Integer for node in lst.value]):
+        if not all([node.type == Node.Type.Integer for node in lst.value]):
             raise Exception
-        return Node(NodeType.Integer, min([node.value for node in lst.value]))
+        return Node(Node.Type.Integer, min([node.value for node in lst.value]))
 
-    builtins["min"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": min})
+    builtins["min"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": min})
 
     def count(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == NodeType.List:
+        if not lst.type == Node.Type.List:
             raise Exception
-        return Node(NodeType.Integer, len([node.value for node in lst.value]))
+        return Node(Node.Type.Integer, len([node.value for node in lst.value]))
 
-    builtins["count"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": count})
+    builtins["count"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": count})
 
     def sum(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == NodeType.List:
+        if not lst.type == Node.Type.List:
             raise Exception
-        if not all([NodeType.is_number(node.type) for node in lst.value]) or all(
-                [node.type == NodeType.Float for node in lst.value]):
+        if not all([Node.Type.is_number(node.type) for node in lst.value]) or all(
+                [node.type == Node.Type.Float for node in lst.value]):
             raise Exception
 
-        if not all([node.type == NodeType.Integer for node in lst.value]):
+        if not all([node.type == Node.Type.Integer for node in lst.value]):
             l_ = [node.value for node in lst.value]
             res = 0
             for l in l_:
                 res += l
-            return Node(NodeType.Integer, res)
+            return Node(Node.Type.Integer, res)
 
-        if not all([node.type == NodeType.Float for node in lst.value]):
+        if not all([node.type == Node.Type.Float for node in lst.value]):
             l_ = [node.value for node in lst.value]
             res = 0.0
             for l in l_:
                 res += l
-            return Node(NodeType.Float, res)
+            return Node(Node.Type.Float, res)
 
-    builtins["min"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": min})
+    builtins["min"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": min})
 
     def avg(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == NodeType.List:
+        if not lst.type == Node.Type.List:
             raise Exception
-        if not all([node.type in [NodeType.Integer, NodeType] for node in lst.value]):
+        if not all([node.type in [Node.Type.Integer, Node.Type] for node in lst.value]):
             raise Exception
 
         l_ = [node.value for node in lst.value]
-        return Node(NodeType.Integer, sum(l_) / len(l_))
+        return Node(Node.Type.Integer, sum(l_) / len(l_))
 
-    builtins["avg"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": avg})
+    builtins["avg"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": avg})
 
     def hex(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not NodeType.is_number(lst.type):
+        if not Node.Type.is_number(lst.type):
             raise Exception
 
-        return Node(NodeType.Hexadecimal, hex(lst.value))
+        return Node(Node.Type.Hexadecimal, hex(lst.value))
 
-    builtins["hex"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": hex})
+    builtins["hex"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": hex})
 
     def bin(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not NodeType.is_number(lst.type):
+        if not Node.Type.is_number(lst.type):
             raise Exception
 
-        return Node(NodeType.Binary, bin(lst.value))
+        return Node(Node.Type.Binary, bin(lst.value))
 
-    builtins["bin"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": bin})
+    builtins["bin"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": bin})
 
     def oct(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not NodeType.is_number(lst.type):
+        if not Node.Type.is_number(lst.type):
             raise Exception
 
-        return Node(NodeType.Octal, oct(lst.value))
+        return Node(Node.Type.Octal, oct(lst.value))
 
     def builtin_range(execution_environment, params):
         if len(params) != 1:
             raise Exception
         end = params[0]
-        if end.type != NodeType.Integer:
+        if end.type != Node.Type.Integer:
             raise Exception
         end = end.value
-        return Node(NodeType.List, [Node(NodeType.Integer, i) for i in range(end)])
+        return Node(Node.Type.List, [Node(Node.Type.Integer, i) for i in range(end)])
 
-    builtins["range"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": builtin_range})
+    builtins["range"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": builtin_range})
 
     def for_each(execution_environment, params):
         if len(params) != 2:
             raise Exception
         lst, func = params
-        if lst.type != NodeType.List:
+        if lst.type != Node.Type.List:
             raise Exception
-        if func.type != NodeType.Function:
+        if func.type != Node.Type.Function:
             raise Exception
-        return Node(NodeType.List, [Node(NodeType.FunctionCallOrListIndexing, (func, [elem])).interpret(execution_environment) for elem in lst.value])
+        return Node(Node.Type.List, [Node(Node.Type.FunctionCallOrListIndexing, (func, [elem])).interpret(execution_environment) for elem in lst.value])
 
-    builtins["for_each"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": for_each})
+    builtins["for_each"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": for_each})
 
     def builtin_all(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if lst.type != NodeType.List:
+        if lst.type != Node.Type.List:
             raise Exception
         lst = lst.value
         for elem in lst:
-            if elem.type != NodeType.Boolean:
+            if elem.type != Node.Type.Boolean:
                 raise Exception
-        return Node(NodeType.Boolean, all([elem.value for elem in lst]))
+        return Node(Node.Type.Boolean, all([elem.value for elem in lst]))
 
-    builtins["all"] = Node(NodeType.Function, {"type": FunctionType.Internal, "body": builtin_all})
+    builtins["all"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": builtin_all})
 
 
 class Error(Exception):  # TODO: Implement in own language
@@ -754,7 +753,7 @@ class File:
 
     def totally_transform_thing_list(self, things):
 
-        if any([thing.type == NodeType.Comma for thing in things]):
+        if any([thing.type == Node.Type.Comma for thing in things]):
             i = 0
             list_elements = []
             while True:
@@ -764,7 +763,7 @@ class File:
                     i += 1
                     if i == len(things):
                         break
-                    if things[i].type == NodeType.Comma:
+                    if things[i].type == Node.Type.Comma:
                         break
                 element_things = self.repeatedly_transform_thing_list(element_things)
                 if len(element_things) != 1:
@@ -773,12 +772,12 @@ class File:
                 list_elements.append(element)
                 if i == len(things):
                     break
-                if things[i].type != NodeType.Comma:
+                if things[i].type != Node.Type.Comma:
                     raise Exception
                 i += 1
                 if i == len(things):
                     break
-            return Node(NodeType.List, list_elements)
+            return Node(Node.Type.List, list_elements)
 
         return None
 
@@ -786,119 +785,119 @@ class File:
         (
             "assignment",
             [
-                (lambda elem_0: elem_0.type == NodeType.Identifier),
-                (lambda elem_1: elem_1.type == NodeType.InfixOperator and elem_1.value == '='),
-                (lambda elem_2: NodeType.is_expression(elem_2.type)),
+                (lambda elem_0: elem_0.type == Node.Type.Identifier),
+                (lambda elem_1: elem_1.type == Node.Type.InfixOperator and elem_1.value == '='),
+                (lambda elem_2: Node.Type.is_expression(elem_2.type)),
             ],
-            (lambda arr: Node(NodeType.Assignment, (arr[0].value, arr[2]))),
+            (lambda arr: Node(Node.Type.Assignment, (arr[0].value, arr[2]))),
         ),
         (
             "for_loop_expression",
             [
                 (lambda elem_0: True),
-                (lambda elem_1: elem_1.type == NodeType.Identifier),
-                (lambda elem_2: elem_2.type == NodeType.InfixOperator and elem_2.value == ':'),
-                (lambda elem_3: NodeType.is_iterable(elem_3.type)),
+                (lambda elem_1: elem_1.type == Node.Type.Identifier),
+                (lambda elem_2: elem_2.type == Node.Type.InfixOperator and elem_2.value == ':'),
+                (lambda elem_3: Node.Type.is_iterable(elem_3.type)),
             ],
-            (lambda arr: Node(NodeType.ForLoopExpression, (arr[1].value, arr[3].value))),
+            (lambda arr: Node(Node.Type.ForLoopExpression, (arr[1].value, arr[3].value))),
         ),
         (
             "conditional_expression",
             [
-                (lambda elem_0: elem_0.type == NodeType.Statement),
-                (lambda elem_1: elem_1.type in [NodeType.Identifier, NodeType.String, NodeType.Integer, NodeType.List,
-                                                NodeType.Function]),
-                (lambda elem_2: elem_2.type == NodeType.InfixOperator and not elem_2.value in ['==', '<', '>', '>=',
+                (lambda elem_0: elem_0.type == Node.Type.Statement),
+                (lambda elem_1: elem_1.type in [Node.Type.Identifier, Node.Type.String, Node.Type.Integer, Node.Type.List,
+                                                Node.Type.Function]),
+                (lambda elem_2: elem_2.type == Node.Type.InfixOperator and not elem_2.value in ['==', '<', '>', '>=',
                                                                                                '<=', '%']),
-                (lambda elem_3: elem_3.type in [NodeType.Identifier, NodeType.String, NodeType.Integer, NodeType.List,
-                                                NodeType.Function]),
+                (lambda elem_3: elem_3.type in [Node.Type.Identifier, Node.Type.String, Node.Type.Integer, Node.Type.List,
+                                                Node.Type.Function]),
             ],
-            (lambda arr: Node(NodeType.ConditionalExpression, (arr[0].value, arr[1].value, arr[2].value))),
+            (lambda arr: Node(Node.Type.ConditionalExpression, (arr[0].value, arr[1].value, arr[2].value))),
         ),
         (
             "prefix_operation",
             [
-                (lambda elem_0: elem_0.type == NodeType.PrefixOperator and elem_0.value != '°'),
-                (lambda elem_1: NodeType.is_expression(elem_1.type)),
+                (lambda elem_0: elem_0.type == Node.Type.PrefixOperator and elem_0.value != '°'),
+                (lambda elem_1: Node.Type.is_expression(elem_1.type)),
             ],
-            (lambda arr: Node(NodeType.PrefixOperation, (arr[0].value, arr[1]))),
+            (lambda arr: Node(Node.Type.PrefixOperation, (arr[0].value, arr[1]))),
         ),
         (
             "prefix_operation",
             [
-                (lambda elem_0: elem_0.type == NodeType.InfixOperator and elem_0.value == '-'),
-                (lambda elem_1: NodeType.is_expression(elem_1.type)),
+                (lambda elem_0: elem_0.type == Node.Type.InfixOperator and elem_0.value == '-'),
+                (lambda elem_1: Node.Type.is_expression(elem_1.type)),
             ],
-            (lambda arr: Node(NodeType.PrefixOperation, ('-', arr[1]))),
+            (lambda arr: Node(Node.Type.PrefixOperation, ('-', arr[1]))),
         ),
         (
             "postfix_operation",
             [
-                (lambda elem_0: NodeType.is_expression(elem_0.type)),
-                (lambda elem_1: elem_1.type == NodeType.PostfixOperator),
+                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_1: elem_1.type == Node.Type.PostfixOperator),
             ],
-            (lambda arr: Node(NodeType.PostfixOperation, (arr[0], arr[1].value))),
+            (lambda arr: Node(Node.Type.PostfixOperation, (arr[0], arr[1].value))),
         ),
         (
             "infix_operation",
             [
-                (lambda elem_0: NodeType.is_expression(elem_0.type)),
-                (lambda elem_1: elem_1.type == NodeType.InfixOperator and elem_1.value != '='),
-                (lambda elem_2: NodeType.is_expression(elem_2.type)),
+                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_1: elem_1.type == Node.Type.InfixOperator and elem_1.value != '='),
+                (lambda elem_2: Node.Type.is_expression(elem_2.type)),
             ],
-            (lambda arr: Node(NodeType.InfixOperation, (arr[0], arr[1].value, arr[2]))),
+            (lambda arr: Node(Node.Type.InfixOperation, (arr[0], arr[1].value, arr[2]))),
         ),
         (
             "declaration_assignment",
             [
-                (lambda elem_0: elem_0.type == NodeType.PrefixOperator and elem_0.value == '°'),
-                (lambda elem_1: elem_1.type == NodeType.Assignment),
+                (lambda elem_0: elem_0.type == Node.Type.PrefixOperator and elem_0.value == '°'),
+                (lambda elem_1: elem_1.type == Node.Type.Assignment),
             ],
-            (lambda arr: Node(NodeType.DeclarationAssignment, arr[1].value)),
+            (lambda arr: Node(Node.Type.DeclarationAssignment, arr[1].value)),
         ),
         (
             "function_call_or_list_indexing",
             [
-                (lambda elem_0: NodeType.is_expression(elem_0.type)),
-                (lambda elem_1: elem_1.type == NodeType.Block and len(elem_1.value) == 0),
+                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_1: elem_1.type == Node.Type.Block and len(elem_1.value) == 0),
             ],
-            (lambda arr: Node(NodeType.FunctionCallOrListIndexing, (arr[0], []))),
+            (lambda arr: Node(Node.Type.FunctionCallOrListIndexing, (arr[0], []))),
         ),
         (
             "function_call_or_list_indexing",
             [
-                (lambda elem_0: NodeType.is_expression(elem_0.type)),
-                (lambda elem_1: elem_1.type == NodeType.Block and len(elem_1.value) == 1),
+                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_1: elem_1.type == Node.Type.Block and len(elem_1.value) == 1),
             ],
-            (lambda arr: Node(NodeType.FunctionCallOrListIndexing, (arr[0], [arr[1].value[0]]))),
+            (lambda arr: Node(Node.Type.FunctionCallOrListIndexing, (arr[0], [arr[1].value[0]]))),
         ),
         (
             "function_call_or_list_indexing",
             [
-                (lambda elem_0: NodeType.is_expression(elem_0.type)),
-                (lambda elem_1: elem_1.type == NodeType.List),
+                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_1: elem_1.type == Node.Type.List),
             ],
-            (lambda arr: Node(NodeType.FunctionCallOrListIndexing, (arr[0], arr[1].value))),
+            (lambda arr: Node(Node.Type.FunctionCallOrListIndexing, (arr[0], arr[1].value))),
         ),
         (
             "if_statement",
             [
-                (lambda elem_0: elem_0.type == NodeType.Statement and elem_0.value == "if"),
-                (lambda elem_1: NodeType.is_expression(elem_1.type)),
-                (lambda elem_2: NodeType.is_expression(elem_2.type)),
+                (lambda elem_0: elem_0.type == Node.Type.Statement and elem_0.value == "if"),
+                (lambda elem_1: Node.Type.is_expression(elem_1.type)),
+                (lambda elem_2: Node.Type.is_expression(elem_2.type)),
             ],
-            (lambda arr: Node(NodeType.IfStatement, (arr[1], arr[2]))),
+            (lambda arr: Node(Node.Type.IfStatement, (arr[1], arr[2]))),
         ),
         (
             "if_else_statement",
             [
-                (lambda elem_0: elem_0.type == NodeType.Statement and elem_0.value == "if"),
-                (lambda elem_1: NodeType.is_expression(elem_1.type)),
-                (lambda elem_2: NodeType.is_expression(elem_2.type)),
-                (lambda elem_3: elem_3.type == NodeType.Statement and elem_3.value == "else"),
-                (lambda elem_4: NodeType.is_expression(elem_4.type)),
+                (lambda elem_0: elem_0.type == Node.Type.Statement and elem_0.value == "if"),
+                (lambda elem_1: Node.Type.is_expression(elem_1.type)),
+                (lambda elem_2: Node.Type.is_expression(elem_2.type)),
+                (lambda elem_3: elem_3.type == Node.Type.Statement and elem_3.value == "else"),
+                (lambda elem_4: Node.Type.is_expression(elem_4.type)),
             ],
-            (lambda arr: Node(NodeType.IfElseStatement, (arr[1], arr[2], arr[4]))),
+            (lambda arr: Node(Node.Type.IfElseStatement, (arr[1], arr[2], arr[4]))),
         ),
     ]
 
@@ -963,7 +962,7 @@ class File:
             return final_node
 
         things = self.repeatedly_transform_thing_list(things)
-        final_node = Node(NodeType.Block, things)
+        final_node = Node(Node.Type.Block, things)
         return final_node
 
     def is_boolean(self):
@@ -972,17 +971,17 @@ class File:
     def parse_boolean(self):
         if self.slice(5) == 'False':
             self.position += 5
-            return Node(NodeType.Boolean, self.slice(5))
+            return Node(Node.Type.Boolean, self.slice(5))
         elif self.slice(4) == 'True':
             self.position += 4
-            return Node(NodeType.Boolean, self.slice(4))
+            return Node(Node.Type.Boolean, self.slice(4))
 
     def is_block(self):
         return self.get() == '{'
 
     def parse_block(self):
-        return self.parse_general_block(NodeType.OpeningCurly,
-                                        NodeType.ClosingCurly)
+        return self.parse_general_block(Node.Type.OpeningCurly,
+                                        Node.Type.ClosingCurly)
 
     def parse(self):
         # self.check_start()
@@ -990,7 +989,7 @@ class File:
         # block = self.parse_block()
         # self.check_end()
         # return Node()
-        return self.parse_general_block(NodeType.Start, NodeType.End)
+        return self.parse_general_block(Node.Type.Start, Node.Type.End)
 
     def check_start(self):
         if not self.slice(5) == 'START' in self.content:
@@ -1009,7 +1008,7 @@ class File:
     def parse_builtin_identifier(self):
         self.position += 1
         name = self.parse_identifier().value
-        return Node(NodeType.BuiltinIdentifier, name)
+        return Node(Node.Type.BuiltinIdentifier, name)
 
     def is_prefix_operator(self):
         return any([self.slice(len(op)) == op for op in self.prefix_operators])
@@ -1018,7 +1017,7 @@ class File:
         for op in self.prefix_operators:
             if self.slice(len(op)) == op:
                 self.position += len(op)
-                return Node(NodeType.PrefixOperator, op)
+                return Node(Node.Type.PrefixOperator, op)
         raise Exception
 
     def is_statement(self):
@@ -1034,14 +1033,14 @@ class File:
         for i in range(5):
             if self.slice(i) in self.statements:
                 self.position += i
-                return Node(NodeType.Statement,
+                return Node(Node.Type.Statement,
                             self.content[self.position - i:self.position])
 
     def is_type_assignment(self):
         ...
 
     def return_string(self):
-        return Node(NodeType.String, self.string)
+        return Node(Node.Type.String, self.string)
 
     def parse_thing(self, no_blocks=False):
         self.skip_useless()
@@ -1085,7 +1084,7 @@ class File:
         while self.get() in string.ascii_letters + '_' + string.digits:
             identifier += self.get()
             self.position += 1
-        return Node(NodeType.Identifier, identifier)
+        return Node(Node.Type.Identifier, identifier)
 
     # def is_integer(self):
     #     return self.get() in string.digits
@@ -1096,7 +1095,7 @@ class File:
     #         integer *= 10
     #         integer += int(self.get())
     #         self.position += 1
-    #     return Node(NodeType.Integer, integer)
+    #     return Node(Node.Type.Integer, integer)
 
     def is_hex(self):
         return self.slice(2) == '0x' and self.content[
@@ -1110,7 +1109,7 @@ class File:
             hex_number += self.get()
             self.position += 1
 
-        return Node(NodeType.Hexadecimal, hex_number)
+        return Node(Node.Type.Hexadecimal, hex_number)
 
     def is_oct(self):
         return self.slice(2) == '0o' and self.content[self.position + 2] in '01234567'
@@ -1123,7 +1122,7 @@ class File:
             oct_number += self.get()
             self.position += 1
 
-        return Node(NodeType.Octal, oct_number)
+        return Node(Node.Type.Octal, oct_number)
 
     def is_bin(self):
         return self.slice(2) == '0b' and self.content[self.position + 2] in ['0', '1']
@@ -1136,7 +1135,7 @@ class File:
             bin_number += self.get()
             self.position += 1
 
-        return Node(NodeType.Binary, bin_number)
+        return Node(Node.Type.Binary, bin_number)
 
     def is_number(self):
         if self.get() == '.' and self.content[self.position + 1] in string.digits:
@@ -1153,7 +1152,7 @@ class File:
 
         if self.slice(3) in ['NaN', 'inf']:
             self.position += 3
-            return Node(NodeType.Float, self.content[self.position - 3: self.position])
+            return Node(Node.Type.Float, self.content[self.position - 3: self.position])
 
         while self.get() in string.digits + '.' and not exponential == 1:
             if points == 0:
@@ -1188,9 +1187,9 @@ class File:
             number *= 10 ** exponent
 
         if points == 1 or exponential == 1:
-            return Node(NodeType.Float, number)
+            return Node(Node.Type.Float, number)
         else:
-            return Node(NodeType.Integer, number)
+            return Node(Node.Type.Integer, number)
 
     def is_postfix_operator(self):
         return self.get() in ['!', '?']
@@ -1198,7 +1197,7 @@ class File:
     def parse_postfix_operator(self):
         c = self.get()
         self.position += 1
-        return Node(NodeType.PostfixOperator, c)
+        return Node(Node.Type.PostfixOperator, c)
 
     def is_infix_operator(self):
         if self.slice(3) in ['//=', 'and', 'not']:
@@ -1215,18 +1214,18 @@ class File:
         if self.slice(3) in ['//=', 'and', 'not']:
             s = self.slice(3)
             self.position += 3
-            return Node(NodeType.InfixOperator, s)
+            return Node(Node.Type.InfixOperator, s)
         elif self.slice(2) in [
             '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
             '<=', 'or'
         ]:
             s = self.slice(2)
             self.position += 2
-            return Node(NodeType.InfixOperator, s)
+            return Node(Node.Type.InfixOperator, s)
         elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.']:
             c = self.get()
             self.position += 1
-            return Node(NodeType.InfixOperator, c)
+            return Node(Node.Type.InfixOperator, c)
         raise Exception
 
     def is_start(self):
@@ -1234,28 +1233,28 @@ class File:
 
     def parse_start(self):
         self.position += 5
-        return Node(NodeType.Start, None)
+        return Node(Node.Type.Start, None)
 
     def is_end(self):
         return self.slice(3) == "END"
 
     def parse_end(self):
         self.position += 3
-        return Node(NodeType.End, None)
+        return Node(Node.Type.End, None)
 
     def is_opening_curly(self):
         return self.get() == '{'
 
     def parse_opening_curly(self):
         self.position += 1
-        return Node(NodeType.OpeningCurly, None)
+        return Node(Node.Type.OpeningCurly, None)
 
     def is_closing_curly(self):
         return self.get() == '}'
 
     def parse_closing_curly(self):
         self.position += 1
-        return Node(NodeType.ClosingCurly, None)
+        return Node(Node.Type.ClosingCurly, None)
 
     def is_type(self):
         for typename in [
@@ -1273,7 +1272,7 @@ class File:
         ]:
             if self.slice(len(typename)) == typename:
                 self.position += len(typename)
-                return Node(NodeType.Type, typename)
+                return Node(Node.Type.Type, typename)
         raise Exception
 
     def is_comma(self):
@@ -1281,7 +1280,7 @@ class File:
 
     def parse_comma(self):
         self.position += 1
-        return Node(NodeType.Comma, None)
+        return Node(Node.Type.Comma, None)
 
     def is_import_statement(self):
         return self.slice(3) == 'lib'
@@ -1291,7 +1290,7 @@ class File:
         self.skip_useless()
         lib = self.parse_identifier()
         self.skip_useless()
-        return Node(NodeType.Statement, ('lib', lib))
+        return Node(Node.Type.Statement, ('lib', lib))
 
     def is_python_import_statement(self):
         return self.slice(5) == 'pylib'
@@ -1301,7 +1300,7 @@ class File:
         self.skip_useless()
         lib = self.parse_identifier()
         self.skip_useless()
-        return Node(NodeType.Statement, ('pylib', lib))
+        return Node(Node.Type.Statement, ('pylib', lib))
 
     def is_string(self):
         return self.get() in ['"', "'"]
@@ -1316,14 +1315,14 @@ class File:
             s += self.get()
             self.position += 1
         self.position += 1
-        return Node(NodeType.String, s)
+        return Node(Node.Type.String, s)
 
     def is_colon(self):
         return self.get() == ':'
 
     def parse_colon(self):
         self.position += 1
-        return Node(NodeType.Colon, ':')
+        return Node(Node.Type.Colon, ':')
 
     def is_try(self):
         return self.slice(3) == 'try'
@@ -1363,7 +1362,7 @@ class File:
         except_ = self.parse_block()
         self.skip_useless()
 
-        return Node(NodeType.Try, {"try_block": try_, "error": error, "except_block": except_})
+        return Node(Node.Type.Try, {"try_block": try_, "error": error, "except_block": except_})
 
     def is_for_loop(self):
         return self.slice(3) == 'for'
@@ -1396,7 +1395,7 @@ class File:
             self.skip_useless()
         self.parse_block()
 
-        return Node(NodeType.ForLoop, {'iterated_variable': var, 'iterable': iter_})
+        return Node(Node.Type.ForLoop, {'iterated_variable': var, 'iterable': iter_})
 
     def is_class(self):
         return self.slice(2) == 'cl'
@@ -1423,7 +1422,7 @@ class File:
         self.parse_closing_curly()
         self.skip_useless()
 
-        return Node(NodeType.Class, {'name': name, 'function_names': functions})
+        return Node(Node.Type.Class, {'name': name, 'function_names': functions})
 
     def is_function(self):
         return self.slice(2) == "fn"
@@ -1496,7 +1495,7 @@ class File:
         self.skip_useless()
         res["body"] = self.parse_function_body()
         self.skip_useless()
-        return Node(NodeType.Function, res)
+        return Node(Node.Type.Function, res)
 
     def is_boolean(self):
         for s in ["True", "False"]:
@@ -1508,7 +1507,7 @@ class File:
         for s in ["True", "False"]:
             if self.slice(len(s)) == s:
                 self.position += len(s)
-                return Node(NodeType.Boolean, s == "True")
+                return Node(Node.Type.Boolean, s == "True")
 
 
 def main(filename):
