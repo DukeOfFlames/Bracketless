@@ -255,8 +255,8 @@ class Node:
         IfStatement = 38
         IfElseStatement = 39
 
-        def is_expression(node_type):
-            return node_type in [
+        def is_expression(self):
+            return self in [
                 Node.Type.Identifier,
                 Node.Type.Integer,
                 Node.Type.Block,
@@ -276,11 +276,11 @@ class Node:
                 Node.Type.Float,
             ]
 
-        def is_iterable(node_type):
-            return node_type in [Node.Type.String, Node.Type.List]
+        def is_iterable(self):
+            return self in [Node.Type.String, Node.Type.List]
 
-        def is_number(node_type):
-            return node_type in [Node.Type.Integer, Node.Type.Float]
+        def is_number(self):
+            return self in [Node.Type.Integer, Node.Type.Float]
 
     def __init__(self, type, value):
         self.type = type
@@ -606,7 +606,7 @@ class Builtins:
         lst = params[0]
         if not lst.type == Node.Type.List:
             raise Exception
-        if not all([Node.Type.is_number(node.type) for node in lst.value]) or all(
+        if not all([node.type.is_number() for node in lst.value]) or all(
             [node.type == Node.Type.Float for node in lst.value]
         ):
             raise Exception
@@ -649,7 +649,7 @@ class Builtins:
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not Node.Type.is_number(lst.type):
+        if not lst.type.is_number():
             raise Exception
 
         return Node(Node.Type.Hexadecimal, hex(lst.value))
@@ -662,7 +662,7 @@ class Builtins:
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not Node.Type.is_number(lst.type):
+        if not lst.type.is_number():
             raise Exception
 
         return Node(Node.Type.Binary, bin(lst.value))
@@ -675,7 +675,7 @@ class Builtins:
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not Node.Type.is_number(lst.type):
+        if not lst.type.is_number():
             raise Exception
 
         return Node(Node.Type.Octal, oct(lst.value))
@@ -851,7 +851,7 @@ class File:
                     lambda elem_1: elem_1.type == Node.Type.InfixOperator
                     and elem_1.value == "="
                 ),
-                (lambda elem_2: Node.Type.is_expression(elem_2.type)),
+                (lambda elem_2: elem_2.type.is_expression()),
             ],
             (lambda arr: Node(Node.Type.Assignment, (arr[0].value, arr[2]))),
         ),
@@ -864,7 +864,7 @@ class File:
                     lambda elem_2: elem_2.type == Node.Type.InfixOperator
                     and elem_2.value == ":"
                 ),
-                (lambda elem_3: Node.Type.is_iterable(elem_3.type)),
+                (lambda elem_3: elem_3.type.is_iterable()),
             ],
             (
                 lambda arr: Node(
@@ -915,7 +915,7 @@ class File:
                     lambda elem_0: elem_0.type == Node.Type.PrefixOperator
                     and elem_0.value != "°"
                 ),
-                (lambda elem_1: Node.Type.is_expression(elem_1.type)),
+                (lambda elem_1: elem_1.type.is_expression()),
             ],
             (lambda arr: Node(Node.Type.PrefixOperation, (arr[0].value, arr[1]))),
         ),
@@ -926,14 +926,14 @@ class File:
                     lambda elem_0: elem_0.type == Node.Type.InfixOperator
                     and elem_0.value == "-"
                 ),
-                (lambda elem_1: Node.Type.is_expression(elem_1.type)),
+                (lambda elem_1: elem_1.type.is_expression()),
             ],
             (lambda arr: Node(Node.Type.PrefixOperation, ("-", arr[1]))),
         ),
         (
             "postfix_operation",
             [
-                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_0: elem_0.type.is_expression()),
                 (lambda elem_1: elem_1.type == Node.Type.PostfixOperator),
             ],
             (lambda arr: Node(Node.Type.PostfixOperation, (arr[0], arr[1].value))),
@@ -941,12 +941,12 @@ class File:
         (
             "infix_operation",
             [
-                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_0: elem_0.type.is_expression()),
                 (
                     lambda elem_1: elem_1.type == Node.Type.InfixOperator
                     and elem_1.value != "="
                 ),
-                (lambda elem_2: Node.Type.is_expression(elem_2.type)),
+                (lambda elem_2: elem_2.type.is_expression()),
             ],
             (
                 lambda arr: Node(
@@ -968,7 +968,7 @@ class File:
         (
             "function_call_or_list_indexing",
             [
-                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_0: elem_0.type.is_expression()),
                 (
                     lambda elem_1: elem_1.type == Node.Type.Block
                     and len(elem_1.value) == 0
@@ -979,7 +979,7 @@ class File:
         (
             "function_call_or_list_indexing",
             [
-                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_0: elem_0.type.is_expression()),
                 (
                     lambda elem_1: elem_1.type == Node.Type.Block
                     and len(elem_1.value) == 1
@@ -994,7 +994,7 @@ class File:
         (
             "function_call_or_list_indexing",
             [
-                (lambda elem_0: Node.Type.is_expression(elem_0.type)),
+                (lambda elem_0: elem_0.type.is_expression()),
                 (lambda elem_1: elem_1.type == Node.Type.List),
             ],
             (
@@ -1010,8 +1010,8 @@ class File:
                     lambda elem_0: elem_0.type == Node.Type.Statement
                     and elem_0.value == "if"
                 ),
-                (lambda elem_1: Node.Type.is_expression(elem_1.type)),
-                (lambda elem_2: Node.Type.is_expression(elem_2.type)),
+                (lambda elem_1: elem_1.type.is_expression()),
+                (lambda elem_2: elem_2.type.is_expression()),
             ],
             (lambda arr: Node(Node.Type.IfStatement, (arr[1], arr[2]))),
         ),
@@ -1022,13 +1022,13 @@ class File:
                     lambda elem_0: elem_0.type == Node.Type.Statement
                     and elem_0.value == "if"
                 ),
-                (lambda elem_1: Node.Type.is_expression(elem_1.type)),
-                (lambda elem_2: Node.Type.is_expression(elem_2.type)),
+                (lambda elem_1: elem_1.type.is_expression()),
+                (lambda elem_2: elem_2.type.is_expression()),
                 (
                     lambda elem_3: elem_3.type == Node.Type.Statement
                     and elem_3.value == "else"
                 ),
-                (lambda elem_4: Node.Type.is_expression(elem_4.type)),
+                (lambda elem_4: elem_4.type.is_expression()),
             ],
             (lambda arr: Node(Node.Type.IfElseStatement, (arr[1], arr[2], arr[4]))),
         ),
