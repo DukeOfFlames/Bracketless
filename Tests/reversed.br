@@ -8,8 +8,8 @@ fn _sub1{x}:
 fn _sub2{x}:
   -> x!
 
-operation = {_sub2{} . _sub1{x}}  § _sub2{_sub1{x}}
+operation = {_sub2 . _sub1}  § _sub2{_sub1{x}}
 
-#drucke{"'#rev{str}': 'operation'"}  § reverses "SINEP"
+#drucke{"'#rev{str}': 'operation{#count{str}}'"}  § reverses "SINEP"
 
 END
