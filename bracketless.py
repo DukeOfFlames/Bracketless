@@ -191,10 +191,8 @@ class Node:
         Start = 6
         End = 7
         Block = 8
-        # InternalFunctionPrefix = 9
         Comma = 10
         PrefixOperator = 11
-        # Quote = 12
         List = 13
         Assignment = 14
         String = 15
@@ -211,7 +209,6 @@ class Node:
         InfixOperation = 26
         Colon = 27
         Type = 28
-        # InternalFunction = 29
         DeclarationAssignment = 30
         BuiltinIdentifier = 31
         Float = 32
