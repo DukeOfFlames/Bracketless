@@ -73,6 +73,37 @@ def inverse_factorial(f):
     return inverse_factorial_approximation(f)
 
 
+def indent_rich_repr(rich_repr):
+    return [(line, indentation + 1) for (line, indentation) in rich_repr]
+
+
+def rich_repr_from_any(v):
+    if type(v) in [str, int, bool, float]:
+        return [(repr(v), 0)]
+    if type(v) == list:
+        return [("[", 0)] + indent_rich_repr(flatten_list([rich_repr_from_any(elem) for elem in v])) + [("]", 0)]
+    if type(v) == tuple:
+        return [("(", 0)] + indent_rich_repr(flatten_list([rich_repr_from_any(elem) for elem in v])) + [(")", 0)]
+    if type(v) == dict:
+        return [("{", 0)] + indent_rich_repr(flatten_list([[(f"{key}:", 0)] + indent_rich_repr(rich_repr_from_any(value)) for key, value in v.items()])) + [("}", 0)]
+    if type(v) == Node:
+        return [(f"Node.{v.type.name}:", 0)] + indent_rich_repr(rich_repr_from_any(v.value))
+    if type(v) == ExecutionEnvironment:
+        return [("ExecutionEnvironment:", 0)] + indent_rich_repr(rich_repr_from_any(v.env))
+    raise Exception(f"Could not format value of type {type(v)}")
+
+
+def string_from_rich_repr(rich_repr):
+    return '\n'.join([
+        "  " * indentation + line
+        for (line, indentation) in rich_repr
+    ])
+
+
+def debug_print_repr(v):
+    debug_print(string_from_rich_repr(rich_repr_from_any(v)))
+
+
 def debug_print(s):
     __print__(s, file=sys.stderr)
 
@@ -97,17 +128,6 @@ class ExecutionEnvironment:
         # env is a list of dictionaries with all the defined variables:
         # [{'a': 2, 'l': [4, 6, 8]}, {'n': 5, 'i': 3}, {'i': 2}]
         self.env = [dict()]
-
-    def debug_print(self):
-        debug_print("[")
-        for scope in self.env:
-            debug_print("  {")
-            for (key, value) in scope.items():
-                debug_print(f"    {key}:")
-                debug_print('\n'.join(
-                    ["      " + line for line in repr(value).split('\n')]))
-            debug_print("  }")
-        debug_print("]")
 
     def get_variable(self, name):
         # Search through all scopes and return the value of the innermost variable with a matching name
@@ -219,43 +239,8 @@ class Node:
         self.type = type
         self.value = value
 
-    def repr_as_list(self, short_toggle):
-
-        if type(self.value) in [list, tuple]:
-            inline_value_repr = "["
-            outline_value_repr = [
-                                     (line, indentation + 4)
-                                     for (line, indentation) in flatten_list([(
-                    elem.repr_as_list(short_toggle) if type(elem) ==
-                                                       Node else [(repr(elem), 0)]) for elem in self.value])
-                                 ] + [("]", 2)]
-        else:
-            inline_value_repr = repr(self.value)
-            outline_value_repr = []
-
-        if short_toggle:
-            return [(f"{self.type}:", 0),
-                    (f"{inline_value_repr}", 2)] \
-                   + outline_value_repr
-        else:
-            return [("Node:", 0),
-                    (f"Type = {self.type}", 2),
-                    (f"Value = {inline_value_repr}", 2)] \
-                   + outline_value_repr
-
-    def __format__(self, spec):
-        short_toggle = False
-        if spec == 's':
-            short_toggle = True
-        if spec == 'l':
-            short_toggle = False
-        return '\n'.join([
-            ' ' * indentation + line
-            for (line, indentation) in self.repr_as_list(short_toggle)
-        ])
-
     def __repr__(self):
-        return f"{self:s}"
+        raise Exception
 
     def representation(self):
         if self.type == Node.Type.Integer:
@@ -284,7 +269,7 @@ class Node:
 
     def interpret(self, execution_environment):
 
-        # execution_environment.debug_print()
+        # debug_print_repr(execution_environment)
 
         if self.type == Node.Type.Block:
             if len(self.value) != 1:
@@ -292,7 +277,7 @@ class Node:
                     for thing in self.value:
                         thing.interpret(execution_environment)
                     debug_print("Environment at end of block:")
-                    execution_environment.debug_print()
+                    debug_print_repr(execution_environment)
                 return None
             else:
                 return self.value[0].interpret(execution_environment)
@@ -1478,7 +1463,7 @@ def main(filename):
     file = File(contents)
     root_node = file.parse()
     debug_print("Root Node:")
-    debug_print(root_node)
+    debug_print_repr(root_node)
     debug_print("")
     debug_print("Interpreting...")
     root_node.interpret(ExecutionEnvironment())
