@@ -1,9 +1,11 @@
 START
 
-b = "Hi"
-a = b
+°b = "Hi"
+°a = b
 
-if
+if True {
+    #drucke{a}
+}
 
 END
 
