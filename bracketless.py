@@ -73,35 +73,43 @@ def inverse_factorial(f):
     return inverse_factorial_approximation(f)
 
 
-def indent_rich_repr(rich_repr):
-    return [(line, indentation + 1) for (line, indentation) in rich_repr]
+class RichRepr:
+    def __init__(self, lst):
+        self.lst = lst
 
+    def concatenate(lst):
+        return RichRepr([(line, indentation) for rich_repr in lst for (line, indentation) in rich_repr.lst])
 
-def rich_repr_from_any(v):
-    if type(v) in [str, int, bool, float]:
-        return [(repr(v), 0)]
-    if type(v) == list:
-        return [("[", 0)] + indent_rich_repr(flatten_list([rich_repr_from_any(elem) for elem in v])) + [("]", 0)]
-    if type(v) == tuple:
-        return [("(", 0)] + indent_rich_repr(flatten_list([rich_repr_from_any(elem) for elem in v])) + [(")", 0)]
-    if type(v) == dict:
-        return [("{", 0)] + indent_rich_repr(flatten_list([[(f"{key}:", 0)] + indent_rich_repr(rich_repr_from_any(value)) for key, value in v.items()])) + [("}", 0)]
-    if type(v) == Node:
-        return [(f"Node.{v.type.name}:", 0)] + indent_rich_repr(rich_repr_from_any(v.value))
-    if type(v) == ExecutionEnvironment:
-        return [("ExecutionEnvironment:", 0)] + indent_rich_repr(rich_repr_from_any(v.env))
-    raise Exception(f"Could not format value of type {type(v)}")
+    def __add__(self, other):
+        return RichRepr(self.lst + other.lst)
 
+    def indent(self):
+        return RichRepr([(line, indentation + 1) for (line, indentation) in self.lst])
 
-def string_from_rich_repr(rich_repr):
-    return '\n'.join([
-        "  " * indentation + line
-        for (line, indentation) in rich_repr
-    ])
+    def from_any(v):
+        if type(v) in [str, int, bool, float]:
+            return RichRepr([(repr(v), 0)])
+        if type(v) == list:
+            return RichRepr([("[", 0)]) + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr([("]", 0)])
+        if type(v) == tuple:
+            return RichRepr([("(", 0)]) + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr([(")", 0)])
+        if type(v) == dict:
+            return RichRepr([("{", 0)]) + RichRepr.concatenate([RichRepr([(f"{key}:", 0)]) + RichRepr.from_any(value).indent() for key, value in v.items()]).indent() + RichRepr([("}", 0)])
+        if type(v) == Node:
+            return RichRepr([(f"Node.{v.type.name}:", 0)]) + RichRepr.from_any(v.value).indent()
+        if type(v) == ExecutionEnvironment:
+            return RichRepr([("ExecutionEnvironment:", 0)]) + RichRepr.from_any(v.env).indent()
+        raise Exception(f"Could not format value of type {type(v)}")
+
+    def string(self):
+        return '\n'.join([
+            "  " * indentation + line
+            for (line, indentation) in self.lst
+        ])
 
 
 def debug_print_repr(v):
-    debug_print(string_from_rich_repr(rich_repr_from_any(v)))
+    debug_print(RichRepr.from_any(v).string())
 
 
 def debug_print(s):
