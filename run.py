@@ -39,24 +39,15 @@ for (test_type, test_name) in tests:
     with open(f"Tests/{test_name}.out") as f:
         expected_output = f.read()
     did_succeed = proc.returncode == 0 and proc.stdout == expected_output
-    if test_type == TestType.Silent:
-        if did_succeed:
-            print("Success.")
-        else:
-            print("Failed.")
-            raise Exception(f"Test {test_name} failed")
-    elif test_type == TestType.Visible:
-        if did_succeed:
-            print("Success.")
-            print("stdout:")
-            print(proc.stdout)
-        else:
-            print("Failed.")
-            print("stderr:")
-            print(proc.stderr)
-            print("stdout:")
-            print(proc.stdout)
-            raise Exception(f"Test {test_name} failed")
+    if did_succeed:
+        print("Success.")
     else:
-        raise Exception
+        print("Failed.")
+    if test_type == TestType.Visible or not did_succeed:
+        print("stderr:")
+        print(proc.stderr)
+        print("stdout:")
+        print(proc.stdout)
+    if not did_succeed:
+        raise Exception(f"Test {test_name} failed")
 print("All tests succeeded!")
