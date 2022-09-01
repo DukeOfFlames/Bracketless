@@ -128,11 +128,10 @@ class RichRepr:
                 ).indent()
                 + RichRepr([("}", 0)])
             )
+        if type(v) == Node.Type:
+            return RichRepr([(f"Node.{v.name}", 0)])
         if type(v) == Node:
-            return (
-                RichRepr([(f"Node.{v.type.name}:", 0)])
-                + RichRepr.from_any(v.value).indent()
-            )
+            return RichRepr.from_any(v.type) + RichRepr.from_any(v.value).indent()
         if type(v) == ExecutionEnvironment:
             return (
                 RichRepr([("ExecutionEnvironment:", 0)])
