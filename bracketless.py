@@ -28,6 +28,7 @@
 import string
 import sys
 import math
+import enum
 
 
 def flatten_list(lst):
@@ -149,7 +150,8 @@ class Return(Exception):
 
 
 class Node:
-    class Type:
+    @enum.unique
+    class Type(enum.Enum):
         Identifier = 0
         Integer = 1
         PostfixOperator = 2
@@ -190,47 +192,6 @@ class Node:
         Octal = 37
         IfStatement = 38
         IfElseStatement = 39
-
-        def string(node_type):
-            return {
-                Node.Type.Identifier: "Identifier",
-                Node.Type.Integer: "Integer",
-                Node.Type.PostfixOperator: "PostfixOperator",
-                Node.Type.InfixOperator: "InfixOperator",
-                Node.Type.OpeningCurly: "OpeningCurly",
-                Node.Type.ClosingCurly: "ClosingCurly",
-                Node.Type.Start: "Start",
-                Node.Type.End: "End",
-                Node.Type.Block: "Block",
-                Node.Type.Comma: "Comma",
-                Node.Type.PrefixOperator: "PrefixOperator",
-                Node.Type.List: "List",
-                Node.Type.Assignment: "Assignment",
-                Node.Type.String: "String",
-                Node.Type.ConditionalExpression: "ConditionalExpression",
-                Node.Type.Statement: "Statement",
-                Node.Type.Function: "Function",
-                Node.Type.ForLoop: "ForLoop",
-                Node.Type.WhileLoop: "WhileLoop",
-                Node.Type.Class: "Class",
-                Node.Type.Boolean: "Boolean",
-                Node.Type.FunctionCallOrListIndexing: "FunctionCallOrListIndexing",
-                Node.Type.PrefixOperation: "PrefixOperation",
-                Node.Type.PostfixOperation: "PostfixOperation",
-                Node.Type.InfixOperation: "InfixOperation",
-                Node.Type.Colon: "Colon",
-                Node.Type.Type: "Type",
-                Node.Type.DeclarationAssignment: "DeclarationAssignment",
-                Node.Type.BuiltinIdentifier: "BuiltinIdentifier",
-                Node.Type.Float: "Float",
-                Node.Type.ForLoopExpression: "ForLoopExpression",
-                Node.Type.Try: "Try",
-                Node.Type.Hexadecimal: "Hexadecimal",
-                Node.Type.Binary: "Binary",
-                Node.Type.Octal: "Octal",
-                Node.Type.IfStatement: "IfStatement",
-                Node.Type.IfElseStatement: "IfElseStatement",
-            }[node_type]
 
         def is_expression(node_type):
             return node_type in [
@@ -273,12 +234,12 @@ class Node:
             outline_value_repr = []
 
         if short_toggle:
-            return [(f"{Node.Type.string(self.type)}:", 0),
+            return [(f"{self.type}:", 0),
                     (f"{inline_value_repr}", 2)] \
                    + outline_value_repr
         else:
             return [("Node:", 0),
-                    (f"Type = {Node.Type.string(self.type)}", 2),
+                    (f"Type = {self.type}", 2),
                     (f"Value = {inline_value_repr}", 2)] \
                    + outline_value_repr
 
@@ -517,7 +478,7 @@ class Node:
             return self
 
         raise Exception(
-            f"Could not interpret Node of type {Node.Type.string(self.type)}")
+            f"Could not interpret Node of type {self.type}")
 
 
 class Builtins:
