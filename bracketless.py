@@ -100,7 +100,11 @@ class RichRepr:
         if type(v) in [ParserNode, InterpreterNode]:
             return RichRepr.from_any(v.type) + RichRepr.from_any(v.value).indent()
         if type(v) == ExecutionEnvironment:
-            return RichRepr([("ExecutionEnvironment:", 0)]) + RichRepr.from_any(v.env).indent()
+            return RichRepr([("ExecutionEnvironment:", 0)]) + RichRepr.from_any(v.current_scope).indent()
+        if type(v) == Scope:
+            return RichRepr([("Scope:", 0)]) + (RichRepr([("Variables:", 0)]) + RichRepr.from_any([name for name, value in v.vars.items()]).indent()).indent() + (RichRepr([("Parent Scope:", 0)]) + RichRepr.from_any(v.parent_scope).indent()).indent()
+        if type(v) == TopScope:
+            return RichRepr([("TopScope", 0)])
         raise Exception(f"Could not format value of type {type(v)}")
 
     def string(self):
@@ -133,39 +137,61 @@ class FunctionType:
     Internal = 1
 
 
-class ExecutionEnvironment:
+class TopScope:
     def __init__(self):
-        # env is a list of dictionaries with all the defined variables:
-        # [{'a': 2, 'l': [4, 6, 8]}, {'n': 5, 'i': 3}, {'i': 2}]
-        self.env = [dict()]
+        pass
 
     def get_variable(self, name):
-        # Search through all scopes and return the value of the innermost variable with a matching name
-        for i in range(len(self.env))[::-1]:
-            if name in self.env[i].keys():
-                return self.env[i][name]
-        # If no variable matches the name, raise an Error
         raise Exception(f"Could not find variable named {repr(name)}")
+
+    def define_variable(self, name):
+        raise Exception(f"Could not define variable named {repr(name)}")
+
+    def set_variable(self, name):
+        raise Exception(f"Could not find variable named {repr(name)}")
+
+
+class Scope:
+    def __init__(self, parent_scope):
+        self.vars = dict()
+        self.parent_scope = parent_scope
+
+    def get_variable(self, name):
+        if name in self.vars.keys():
+            return self.vars[name]
+        else:
+            return self.parent_scope.get_variable(name)
 
     def define_variable(self, name, value):
-        if name in self.env[-1].keys():
+        if name in self.vars.keys():
             raise Exception(f"Variable {repr(name)} is already defined")
-        self.env[-1][name] = value
+        self.vars[name] = value
 
     def set_variable(self, name, value):
-        # Search through all scopes and set the value of the innermost variable with a matching name
-        for i in range(len(self.env))[::-1]:
-            if name in self.env[i].keys():
-                self.env[i][name] = value
-                return
-        # If no variable matches the name, raise an Error
-        raise Exception(f"Could not find variable named {repr(name)}")
+        if name in self.vars.keys():
+            self.vars[name] = value
+        else:
+            self.parent_scope.set_variable(name, value)
+
+
+class ExecutionEnvironment:
+    def __init__(self):
+        self.current_scope = TopScope()
+
+    def get_variable(self, name):
+        return self.current_scope.get_variable(name)
+
+    def define_variable(self, name, value):
+        self.current_scope.define_variable(name, value)
+
+    def set_variable(self, name, value):
+        self.current_scope.set_variable(name, value)
 
     def enter_scope(self):
-        self.env.append(dict())
+        self.current_scope = Scope(self.current_scope)
 
     def leave_scope(self):
-        self.env.pop()
+        self.current_scope = self.current_scope.parent_scope
 
     def __enter__(self):
         self.enter_scope()
