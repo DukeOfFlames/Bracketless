@@ -516,32 +516,31 @@ class ParserNode:
                         if len(params) != 1:
                             raise Exception
                         param = params[0]
-                        with execution_environment:
-                            return ParserNode(
-                                ParserNode.Type.FunctionCallOrListIndexing,
-                                (
+                        return ParserNode(
+                            ParserNode.Type.FunctionCallOrListIndexing,
+                            (
+                                ParserNode(
+                                    ParserNode.Type.InternalInterpreterNode, lhs
+                                ),
+                                [
                                     ParserNode(
-                                        ParserNode.Type.InternalInterpreterNode, lhs
-                                    ),
-                                    [
-                                        ParserNode(
-                                            ParserNode.Type.FunctionCallOrListIndexing,
-                                            (
+                                        ParserNode.Type.FunctionCallOrListIndexing,
+                                        (
+                                            ParserNode(
+                                                ParserNode.Type.InternalInterpreterNode,
+                                                rhs,
+                                            ),
+                                            [
                                                 ParserNode(
                                                     ParserNode.Type.InternalInterpreterNode,
-                                                    rhs,
-                                                ),
-                                                [
-                                                    ParserNode(
-                                                        ParserNode.Type.InternalInterpreterNode,
-                                                        param,
-                                                    )
-                                                ],
-                                            ),
-                                        )
-                                    ],
-                                ),
-                            ).interpret(execution_environment)
+                                                    param,
+                                                )
+                                            ],
+                                        ),
+                                    )
+                                ],
+                            ),
+                        ).interpret(execution_environment)
 
                     return InterpreterNode(
                         InterpreterNode.Type.Function,
