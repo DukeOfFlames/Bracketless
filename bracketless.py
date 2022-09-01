@@ -95,8 +95,10 @@ class RichRepr:
             return RichRepr([("(", 0)]) + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr([(")", 0)])
         if type(v) == dict:
             return RichRepr([("{", 0)]) + RichRepr.concatenate([RichRepr([(f"{key}:", 0)]) + RichRepr.from_any(value).indent() for key, value in v.items()]).indent() + RichRepr([("}", 0)])
+        if type(v) == Node.Type:
+            return RichRepr([(f"Node.{v.name}", 0)])
         if type(v) == Node:
-            return RichRepr([(f"Node.{v.type.name}:", 0)]) + RichRepr.from_any(v.value).indent()
+            return RichRepr.from_any(v.type) + RichRepr.from_any(v.value).indent()
         if type(v) == ExecutionEnvironment:
             return RichRepr([("ExecutionEnvironment:", 0)]) + RichRepr.from_any(v.env).indent()
         raise Exception(f"Could not format value of type {type(v)}")
