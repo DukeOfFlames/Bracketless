@@ -146,7 +146,7 @@ class RichRepr:
         if type(v) == ExecutionEnvironment:
             return (
                 RichRepr([("ExecutionEnvironment:", 0)])
-                + RichRepr.from_any(v.current_scope).indent()
+                + RichRepr.from_any(v.scopes).indent()
             )
         if type(v) == Scope:
             return (
@@ -232,30 +232,42 @@ class Scope:
             self.parent_scope.set_variable(name, value)
 
 
-class ExecutionEnvironment:
-    def __init__(self):
-        self.current_scope = TopScope()
-
-    def get_variable(self, name):
-        return self.current_scope.get_variable(name)
-
-    def define_variable(self, name, value):
-        self.current_scope.define_variable(name, value)
-
-    def set_variable(self, name, value):
-        self.current_scope.set_variable(name, value)
-
-    def enter_scope(self):
-        self.current_scope = Scope(self.current_scope)
-
-    def leave_scope(self):
-        self.current_scope = self.current_scope.parent_scope
+class ExecutionEnvironmentScopeRunner:
+    def __init__(self, execution_environment, parent_scope):
+        self.execution_environment = execution_environment
+        self.parent_scope = parent_scope
 
     def __enter__(self):
-        self.enter_scope()
+        self.execution_environment.enter_scope(self.parent_scope)
 
     def __exit__(self, *args):
-        self.leave_scope()
+        self.execution_environment.exit_scope()
+
+
+class ExecutionEnvironment:
+    def __init__(self):
+        self.scopes = [TopScope()]
+
+    def get_variable(self, name):
+        return self.current_scope().get_variable(name)
+
+    def define_variable(self, name, value):
+        self.current_scope().define_variable(name, value)
+
+    def set_variable(self, name, value):
+        self.current_scope().set_variable(name, value)
+
+    def current_scope(self):
+        return self.scopes[-1]
+
+    def enter_scope(self, parent_scope):
+        self.scopes.append(Scope(parent_scope))
+
+    def exit_scope(self):
+        self.scopes.pop()
+
+    def run_in_scope(self, parent_scope):
+        return ExecutionEnvironmentScopeRunner(self, parent_scope)
 
 
 class Return(Exception):
@@ -345,7 +357,10 @@ class ParserNode:
 
         if self.type == ParserNode.Type.Block:
             if len(self.value) != 1:
-                with execution_environment:
+                # The scope of a block is always simply a child of the scope the block is being interpreted in
+                with execution_environment.run_in_scope(
+                    execution_environment.current_scope()
+                ):
                     for thing in self.value:
                         thing.interpret(execution_environment)
                     debug_print("Environment at end of block:")
@@ -389,7 +404,8 @@ class ParserNode:
                 if func["type"] == FunctionType.External:
                     func_body = func["body"]
                     func_arg_names = [name for (name, type) in func["arg_names"]]
-                    with execution_environment:
+                    # The scope of a function is a child of the scope the function was defined in
+                    with execution_environment.run_in_scope(func["parent_scope"]):
                         if len(func_arg_names) != len(func_arg_values):
                             raise Exception
                         for i in range(len(func_arg_names)):
@@ -580,7 +596,11 @@ class ParserNode:
             if self.value["type"] == FunctionType.Internal:
                 interpreted_self = InterpreterNode(
                     InterpreterNode.Type.Function,
-                    {"type": FunctionType.Internal, "body": self.value["body"]},
+                    {
+                        "type": FunctionType.Internal,
+                        "body": self.value["body"],
+                        "parent_scope": execution_environment.current_scope(),
+                    },
                 )
             elif self.value["type"] == FunctionType.External:
                 interpreted_self = InterpreterNode(
@@ -589,6 +609,7 @@ class ParserNode:
                         "type": FunctionType.External,
                         "arg_names": self.value["arg_names"],
                         "body": self.value["body"],
+                        "parent_scope": execution_environment.current_scope(),
                     },
                 )
             else:
