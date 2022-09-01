@@ -383,6 +383,9 @@ class Node:
                     return func_body(execution_environment, func_arg_values)
                 else:
                     raise Exception
+            debug_print_repr(func_or_list_expr)
+            debug_print_repr(func_or_list)
+            debug_print(type(func_or_list))
             raise Exception(
                 f"Cannot interpret FunctionCallOrListIndexing because {func_or_list} is neither a function nor a list"
             )
