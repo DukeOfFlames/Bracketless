@@ -1,6 +1,6 @@
 START
 
-test = 3
+°test = 3
 
 fn square{x}{
     -> x * x
@@ -10,7 +10,7 @@ fn root{y}{
     -> y // 2
 }
 
-result = {root . square}{test}
+°result = {root . square}{test}
 #drucke{result}
 
 END
