@@ -95,9 +95,9 @@ class RichRepr:
             return RichRepr([("(", 0)]) + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr([(")", 0)])
         if type(v) == dict:
             return RichRepr([("{", 0)]) + RichRepr.concatenate([RichRepr([(f"{key}:", 0)]) + RichRepr.from_any(value).indent() for key, value in v.items()]).indent() + RichRepr([("}", 0)])
-        if type(v) == Node.Type:
-            return RichRepr([(f"Node.{v.name}", 0)])
-        if type(v) == Node:
+        if type(v) in [ParserNode.Type, InterpreterNode.Type]:
+            return RichRepr([({ParserNode.Type: "ParserNode", InterpreterNode.Type: "InterpreterNode"}[type(v)] + f".{v.name}", 0)])
+        if type(v) in [ParserNode, InterpreterNode]:
             return RichRepr.from_any(v.type) + RichRepr.from_any(v.value).indent()
         if type(v) == ExecutionEnvironment:
             return RichRepr([("ExecutionEnvironment:", 0)]) + RichRepr.from_any(v.env).indent()
@@ -179,7 +179,7 @@ class Return(Exception):
         self.return_value = return_value
 
 
-class Node:
+class ParserNode:
     @enum.unique
     class Type(enum.Enum):
         Identifier = 0
@@ -202,7 +202,7 @@ class Node:
         ForLoop = 19  # WIP
         WhileLoop = 20  # WIP
         Class = 21  # WIP
-        Boolean = 22  # WIP
+        Boolean = 22
         FunctionCallOrListIndexing = 23
         PrefixOperation = 24
         PostfixOperation = 25
@@ -219,27 +219,28 @@ class Node:
         Octal = 37
         IfStatement = 38
         IfElseStatement = 39
+        InternalInterpreterNode = 40
 
         def is_expression(self):
             return self in [
-                Node.Type.Identifier, Node.Type.Integer, Node.Type.Block,
-                Node.Type.List, Node.Type.Assignment, Node.Type.String,
-                Node.Type.ConditionalExpression, Node.Type.Function, Node.Type.Class,
-                Node.Type.Boolean, Node.Type.FunctionCallOrListIndexing, Node.Type.PrefixOperation,
-                Node.Type.PostfixOperation, Node.Type.InfixOperation,
-                Node.Type.DeclarationAssignment,
-                Node.Type.BuiltinIdentifier,
-                Node.Type.Float
+                ParserNode.Type.Identifier, ParserNode.Type.Integer, ParserNode.Type.Block,
+                ParserNode.Type.List, ParserNode.Type.Assignment, ParserNode.Type.String,
+                ParserNode.Type.ConditionalExpression, ParserNode.Type.Function, ParserNode.Type.Class,
+                ParserNode.Type.Boolean, ParserNode.Type.FunctionCallOrListIndexing, ParserNode.Type.PrefixOperation,
+                ParserNode.Type.PostfixOperation, ParserNode.Type.InfixOperation,
+                ParserNode.Type.DeclarationAssignment,
+                ParserNode.Type.BuiltinIdentifier,
+                ParserNode.Type.Float
             ]
 
         def is_iterable(self):
             return self in [
-                Node.Type.String, Node.Type.List
+                ParserNode.Type.String, ParserNode.Type.List
             ]
 
         def is_number(self):
             return self in [
-                Node.Type.Integer, Node.Type.Float
+                ParserNode.Type.Integer, ParserNode.Type.Float
             ]
 
     def __init__(self, type, value):
@@ -249,36 +250,11 @@ class Node:
     def __repr__(self):
         raise Exception
 
-    def representation(self):
-        if self.type == Node.Type.Integer:
-            return str(self.value)
-        elif self.type == Node.Type.Float:
-            return str(self.value)
-        elif self.type == Node.Type.String:
-            return "\"" + repr(self.value)[1:-1] + "\""
-        elif self.type == Node.Type.Hexadecimal:
-            return self.value
-        elif self.type == Node.Type.Binary:
-            return self.value
-        elif self.type == Node.Type.List:
-            return "{" + ", ".join([node.representation() for node in self.value]) + "}"
-        elif self.type == Node.Type.Boolean:
-            return "True" if self.value else "False"
-        else:
-            raise Exception
-
-    def convert_to_float(self):
-        if self.type == Node.Type.Float:
-            return self
-        if self.type == Node.Type.Integer:
-            return Node(Node.Type.Float, self.value)
-        return None
-
     def interpret(self, execution_environment):
 
         # debug_print_repr(execution_environment)
 
-        if self.type == Node.Type.Block:
+        if self.type == ParserNode.Type.Block:
             if len(self.value) != 1:
                 with execution_environment:
                     for thing in self.value:
@@ -289,36 +265,36 @@ class Node:
             else:
                 return self.value[0].interpret(execution_environment)
 
-        if self.type == Node.Type.Assignment:
+        if self.type == ParserNode.Type.Assignment:
             name = self.value[0]
             value = self.value[1].interpret(execution_environment)
             execution_environment.set_variable(name, value)
             return value
 
-        if self.type == Node.Type.DeclarationAssignment:
+        if self.type == ParserNode.Type.DeclarationAssignment:
             name = self.value[0]
             value = self.value[1].interpret(execution_environment)
             execution_environment.define_variable(name, value)
             return value
 
-        if self.type == Node.Type.FunctionCallOrListIndexing:
+        if self.type == ParserNode.Type.FunctionCallOrListIndexing:
             func_or_list_expr = self.value[0]
             arg_values = [
                 value.interpret(execution_environment)
                 for value in self.value[1]
             ]
             func_or_list = func_or_list_expr.interpret(execution_environment)
-            if func_or_list.type == Node.Type.List:
+            if func_or_list.type == InterpreterNode.Type.List:
                 lst = func_or_list
                 lst = lst.value
                 if len(arg_values) != 1:
                     raise Exception
                 index = arg_values[0]
-                if index.type != Node.Type.Integer:
+                if index.type != InterpreterNode.Type.Integer:
                     raise Exception
                 index = index.value
                 return lst[index]
-            if func_or_list.type == Node.Type.Function:
+            if func_or_list.type == InterpreterNode.Type.Function:
                 func = func_or_list
                 func_arg_values = arg_values
                 func = func.value
@@ -348,7 +324,7 @@ class Node:
             debug_print(type(func_or_list))
             raise Exception(f"Cannot interpret FunctionCallOrListIndexing because {func_or_list} is neither a function nor a list")
 
-        if self.type == Node.Type.Class:
+        if self.type == ParserNode.Type.Class:
             class_name = self.value[0]
             class_functions = [
                 value.interpret(execution_environment)
@@ -356,85 +332,85 @@ class Node:
             ]
             class_ = execution_environment.get_variable(class_name).value
 
-        if self.type == Node.Type.PrefixOperation:
+        if self.type == ParserNode.Type.PrefixOperation:
             op = self.value[0]
             v = self.value[1].interpret(execution_environment)
             if op == "->":
                 raise Return(v)
             if op == '-':
-                if v.type == Node.Type.Integer:
-                    return Node(Node.Type.Integer, - v.value)
+                if v.type == InterpreterNode.Type.Integer:
+                    return InterpreterNode(InterpreterNode.Type.Integer, - v.value)
                 v_as_float = v.convert_to_float()
                 if v_as_float != None:
-                    return Node(Node.Type.Float, - v.value)
+                    return InterpreterNode(InterpreterNode.Type.Float, - v.value)
             raise Exception(
                 f"Could not interpret PrefixOperation with {self.value}")
 
-        if self.type == Node.Type.PostfixOperation:
+        if self.type == ParserNode.Type.PostfixOperation:
             v = self.value[0].interpret(execution_environment)
             op = self.value[1]
             if op == '!':
-                if v.type == Node.Type.Integer:
-                    return Node(Node.Type.Integer, factorial(v.value))
+                if v.type == InterpreterNode.Type.Integer:
+                    return InterpreterNode(InterpreterNode.Type.Integer, factorial(v.value))
             if op == '?':
                 v_as_float = v.convert_to_float()
                 if v_as_float != None:
-                    return Node(Node.Type.Float, inverse_factorial(v_as_float.value))
+                    return InterpreterNode(InterpreterNode.Type.Float, inverse_factorial(v_as_float.value))
             raise Exception(f"Could not interpret PostfixOperation with {self.value}")
 
-        if self.type == Node.Type.InfixOperation:
+        if self.type == ParserNode.Type.InfixOperation:
             lhs = self.value[0].interpret(execution_environment)
             op = self.value[1]
             rhs = self.value[2].interpret(execution_environment)
             if op in ['+', '-', '*']:
                 func = {'+': (lambda x, y: x + y), '-': (lambda x, y: x - y), '*': (lambda x, y: x * y)}[op]
-                if lhs.type == Node.Type.Integer and rhs.type == Node.Type.Integer:
-                    return Node(Node.Type.Integer, func(lhs.value, rhs.value))
+                if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
+                    return InterpreterNode(InterpreterNode.Type.Integer, func(lhs.value, rhs.value))
                 lhs_as_float = lhs.convert_to_float()
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
-                    return Node(Node.Type.Float, func(lhs_as_float.value, rhs_as_float.value))
+                    return InterpreterNode(InterpreterNode.Type.Float, func(lhs_as_float.value, rhs_as_float.value))
             if op == '/':
                 lhs_as_float = lhs.convert_to_float()
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
-                    return Node(Node.Type.Float, lhs_as_float.value / rhs_as_float.value)
+                    return InterpreterNode(InterpreterNode.Type.Float, lhs_as_float.value / rhs_as_float.value)
             if op == '^':
-                if lhs.type == Node.Type.Integer and rhs.type == Node.Type.Integer:
-                    return Node(Node.Type.Integer, lhs.value ** rhs.value)
+                if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
+                    return InterpreterNode(InterpreterNode.Type.Integer, lhs.value ** rhs.value)
                 lhs_as_float = lhs.convert_to_float()
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
-                    return Node(Node.Type.Float, lhs_as_float.value ** rhs_as_float.value)
+                    return InterpreterNode(InterpreterNode.Type.Float, lhs_as_float.value ** rhs_as_float.value)
             if op == "==":
-                if lhs.type == Node.Type.Integer and rhs.type == Node.Type.Integer:
-                    return Node(Node.Type.Boolean, lhs.value == rhs.value)
+                if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
+                    return InterpreterNode(InterpreterNode.Type.Boolean, lhs.value == rhs.value)
             if op == '.':
-                if lhs.type == Node.Type.Function and rhs.type == Node.Type.Function:
+                if lhs.type == InterpreterNode.Type.Function and rhs.type == InterpreterNode.Type.Function:
                     def combined_func(execution_environment, params):
                         if len(params) != 1:
                             raise Exception
                         param = params[0]
                         with execution_environment:
-                            return Node(Node.Type.FunctionCallOrListIndexing,
-                                        (lhs, [Node(Node.Type.FunctionCallOrListIndexing, (rhs, [param]))])).interpret(
+                            return ParserNode(ParserNode.Type.FunctionCallOrListIndexing,
+                                        (ParserNode(ParserNode.Type.InternalInterpreterNode, lhs), [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (ParserNode(ParserNode.Type.InternalInterpreterNode, rhs), [ParserNode(ParserNode.Type.InternalInterpreterNode, param)]))])).interpret(
                                 execution_environment)
 
-                    return Node(Node.Type.Function, {"type": FunctionType.Internal, "body": combined_func})
+                    return InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": combined_func})
             raise Exception(
                 f"Could not interpret InfixOperation with ({lhs}, {op}, {rhs})")
 
-        if self.type == Node.Type.IfStatement:
+        if self.type == ParserNode.Type.IfStatement:
             predicate = self.value[0].interpret(execution_environment)
-            if predicate.type != Node.Type.Boolean:
+            if predicate.type != InterpreterNode.Type.Boolean:
                 raise Exception
             if predicate.value:
                 consequent = self.value[1].interpret(execution_environment)
             return None
 
-        if self.type == Node.Type.IfElseStatement:
+        if self.type == ParserNode.Type.IfElseStatement:
             predicate = self.value[0].interpret(execution_environment)
-            if predicate.type != Node.Type.Boolean:
+            if predicate.type != InterpreterNode.Type.Boolean:
                 raise Exception
             if predicate.value:
                 consequent = self.value[1].interpret(execution_environment)
@@ -442,38 +418,89 @@ class Node:
                 alternative = self.value[2].interpret(execution_environment)
             return None
 
-        if self.type == Node.Type.Identifier:
+        if self.type == ParserNode.Type.Identifier:
             name = self.value
             return execution_environment.get_variable(name)
 
-        if self.type == Node.Type.BuiltinIdentifier:
+        if self.type == ParserNode.Type.BuiltinIdentifier:
             name = self.value
             return Builtins.builtins[name]
 
-        if self.type == Node.Type.Function:
-            if "name" in self.value.keys():
-                execution_environment.define_variable(self.value["name"], self)
+        if self.type == ParserNode.Type.Function:
             if self.value["type"] == FunctionType.Internal:
-                return Node(Node.Type.Function, {"type": FunctionType.Internal, "body": self.value["body"]})
+                interpreted_self = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": self.value["body"]})
             elif self.value["type"] == FunctionType.External:
-                return Node(Node.Type.Function, {"type": FunctionType.External, "arg_names": self.value["arg_names"], "body": self.value["body"]}) # Forget `self.value["name"]`
+                interpreted_self = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.External, "arg_names": self.value["arg_names"], "body": self.value["body"]})
             else:
                 raise Exception
+            if "name" in self.value.keys():
+                execution_environment.define_variable(self.value["name"], interpreted_self)
+            return interpreted_self
 
-        if self.type == Node.Type.List:
-            return Node(Node.Type.List, [elem.interpret(execution_environment) for elem in self.value])
+        if self.type == ParserNode.Type.List:
+            return InterpreterNode(InterpreterNode.Type.List, [elem.interpret(execution_environment) for elem in self.value])
 
-        if self.type == Node.Type.String:
-            return self
+        if self.type == ParserNode.Type.String:
+            return InterpreterNode(InterpreterNode.Type.String, self.value)
 
-        if self.type == Node.Type.Integer:
-            return self
+        if self.type == ParserNode.Type.Integer:
+            return InterpreterNode(InterpreterNode.Type.Integer, self.value)
 
-        if self.type == Node.Type.Boolean:
-            return self
+        if self.type == ParserNode.Type.Boolean:
+            return InterpreterNode(InterpreterNode.Type.Boolean, self.value)
+
+        if self.type == ParserNode.Type.InternalInterpreterNode:
+            return self.value
 
         raise Exception(
-            f"Could not interpret Node of type {self.type}")
+            f"Could not interpret ParserNode of type {self.type}")
+
+
+class InterpreterNode:
+    @enum.unique
+    class Type(enum.Enum):
+        Integer = 1
+        List = 13
+        String = 15
+        Function = 18
+        Class = 21  # WIP
+        Boolean = 22
+        Float = 32
+        Hexadecimal = 35
+        Binary = 36
+        Octal = 37
+
+    def __init__(self, type, value):
+        self.type = type
+        self.value = value
+
+    def __repr__(self):
+        raise Exception
+
+    def representation(self):
+        if self.type == InterpreterNode.Type.Integer:
+            return str(self.value)
+        elif self.type == InterpreterNode.Type.Float:
+            return str(self.value)
+        elif self.type == InterpreterNode.Type.String:
+            return "\"" + repr(self.value)[1:-1] + "\""
+        elif self.type == InterpreterNode.Type.Hexadecimal:
+            return self.value
+        elif self.type == InterpreterNode.Type.Binary:
+            return self.value
+        elif self.type == InterpreterNode.Type.List:
+            return "{" + ", ".join([node.representation() for node in self.value]) + "}"
+        elif self.type == InterpreterNode.Type.Boolean:
+            return "True" if self.value else "False"
+        else:
+            raise Exception
+
+    def convert_to_float(self):
+        if self.type == InterpreterNode.Type.Float:
+            return self
+        if self.type == InterpreterNode.Type.Integer:
+            return InterpreterNode(InterpreterNode.Type.Float, self.value)
+        return None
 
 
 class Builtins:
@@ -483,149 +510,149 @@ class Builtins:
         for param in params:
             output_print(param.representation())
 
-    builtins["drucke"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": drucke})
+    builtins["drucke"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": drucke})
 
     def max(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == Node.Type.List:
+        if not lst.type == InterpreterNode.Type.List:
             raise Exception
-        if not all([node.type == Node.Type.Integer for node in lst.value]):
+        if not all([node.type == InterpreterNode.Type.Integer for node in lst.value]):
             raise Exception
-        return Node(Node.Type.Integer, max([node.value for node in lst.value]))
+        return InterpreterNode(InterpreterNode.Type.Integer, max([node.value for node in lst.value]))
 
-    builtins["max"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": max})
+    builtins["max"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": max})
 
     def min(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == Node.Type.List:
+        if not lst.type == InterpreterNode.Type.List:
             raise Exception
-        if not all([node.type == Node.Type.Integer for node in lst.value]):
+        if not all([node.type == InterpreterNode.Type.Integer for node in lst.value]):
             raise Exception
-        return Node(Node.Type.Integer, min([node.value for node in lst.value]))
+        return InterpreterNode(InterpreterNode.Type.Integer, min([node.value for node in lst.value]))
 
-    builtins["min"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": min})
+    builtins["min"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": min})
 
     def count(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == Node.Type.List:
+        if not lst.type == InterpreterNode.Type.List:
             raise Exception
-        return Node(Node.Type.Integer, len([node.value for node in lst.value]))
+        return InterpreterNode(InterpreterNode.Type.Integer, len([node.value for node in lst.value]))
 
-    builtins["count"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": count})
+    builtins["count"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": count})
 
     def sum(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == Node.Type.List:
+        if not lst.type == InterpreterNode.Type.List:
             raise Exception
         if not all([node.type.is_number() for node in lst.value]) or all(
-                [node.type == Node.Type.Float for node in lst.value]):
+                [node.type == InterpreterNode.Type.Float for node in lst.value]):
             raise Exception
 
-        if not all([node.type == Node.Type.Integer for node in lst.value]):
+        if not all([node.type == InterpreterNode.Type.Integer for node in lst.value]):
             l_ = [node.value for node in lst.value]
             res = 0
             for l in l_:
                 res += l
-            return Node(Node.Type.Integer, res)
+            return InterpreterNode(InterpreterNode.Type.Integer, res)
 
-        if not all([node.type == Node.Type.Float for node in lst.value]):
+        if not all([node.type == InterpreterNode.Type.Float for node in lst.value]):
             l_ = [node.value for node in lst.value]
             res = 0.0
             for l in l_:
                 res += l
-            return Node(Node.Type.Float, res)
+            return InterpreterNode(InterpreterNode.Type.Float, res)
 
-    builtins["min"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": min})
+    builtins["min"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": min})
 
     def avg(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == Node.Type.List:
+        if not lst.type == InterpreterNode.Type.List:
             raise Exception
-        if not all([node.type in [Node.Type.Integer, Node.Type] for node in lst.value]):
+        if not all([node.type in [InterpreterNode.Type.Integer, InterpreterNode.Type] for node in lst.value]):
             raise Exception
 
         l_ = [node.value for node in lst.value]
-        return Node(Node.Type.Integer, sum(l_) / len(l_))
+        return InterpreterNode(InterpreterNode.Type.Integer, sum(l_) / len(l_))
 
-    builtins["avg"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": avg})
+    builtins["avg"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": avg})
 
     def hex(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type.is_number():
+        if not lst.type == InterpreterNode.Type.Integer:
             raise Exception
 
-        return Node(Node.Type.Hexadecimal, hex(lst.value))
+        return InterpreterNode(InterpreterNode.Type.Hexadecimal, hex(lst.value))
 
-    builtins["hex"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": hex})
+    builtins["hex"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": hex})
 
     def bin(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type.is_number():
+        if not lst.type == InterpreterNode.Type.Integer:
             raise Exception
 
-        return Node(Node.Type.Binary, bin(lst.value))
+        return InterpreterNode(InterpreterNode.Type.Binary, bin(lst.value))
 
-    builtins["bin"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": bin})
+    builtins["bin"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": bin})
 
     def oct(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type.is_number():
+        if not lst.type == InterpreterNode.Type.Integer:
             raise Exception
 
-        return Node(Node.Type.Octal, oct(lst.value))
+        return InterpreterNode(InterpreterNode.Type.Octal, oct(lst.value))
 
     def builtin_range(execution_environment, params):
         if len(params) != 1:
             raise Exception
         end = params[0]
-        if end.type != Node.Type.Integer:
+        if end.type != InterpreterNode.Type.Integer:
             raise Exception
         end = end.value
-        return Node(Node.Type.List, [Node(Node.Type.Integer, i) for i in range(end)])
+        return InterpreterNode(InterpreterNode.Type.List, [InterpreterNode(InterpreterNode.Type.Integer, i) for i in range(end)])
 
-    builtins["range"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": builtin_range})
+    builtins["range"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_range})
 
     def for_each(execution_environment, params):
         if len(params) != 2:
             raise Exception
         lst, func = params
-        if lst.type != Node.Type.List:
+        if lst.type != InterpreterNode.Type.List:
             raise Exception
-        if func.type != Node.Type.Function:
+        if func.type != InterpreterNode.Type.Function:
             raise Exception
-        return Node(Node.Type.List, [Node(Node.Type.FunctionCallOrListIndexing, (func, [elem])).interpret(execution_environment) for elem in lst.value])
+        return InterpreterNode(InterpreterNode.Type.List, [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (ParserNode(ParserNode.Type.InternalInterpreterNode, func), [ParserNode(ParserNode.Type.InternalInterpreterNode, elem)])).interpret(execution_environment) for elem in lst.value])
 
-    builtins["for_each"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": for_each})
+    builtins["for_each"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": for_each})
 
     def builtin_all(execution_environment, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if lst.type != Node.Type.List:
+        if lst.type != InterpreterNode.Type.List:
             raise Exception
         lst = lst.value
         for elem in lst:
-            if elem.type != Node.Type.Boolean:
+            if elem.type != InterpreterNode.Type.Boolean:
                 raise Exception
-        return Node(Node.Type.Boolean, all([elem.value for elem in lst]))
+        return InterpreterNode(InterpreterNode.Type.Boolean, all([elem.value for elem in lst]))
 
-    builtins["all"] = Node(Node.Type.Function, {"type": FunctionType.Internal, "body": builtin_all})
+    builtins["all"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_all})
 
 
 class Error(Exception):  # TODO: Implement in own language
@@ -709,7 +736,7 @@ class File:
 
     def totally_transform_thing_list(self, things):
 
-        if any([thing.type == Node.Type.Comma for thing in things]):
+        if any([thing.type == ParserNode.Type.Comma for thing in things]):
             i = 0
             list_elements = []
             while True:
@@ -719,7 +746,7 @@ class File:
                     i += 1
                     if i == len(things):
                         break
-                    if things[i].type == Node.Type.Comma:
+                    if things[i].type == ParserNode.Type.Comma:
                         break
                 element_things = self.repeatedly_transform_thing_list(element_things)
                 if len(element_things) != 1:
@@ -728,12 +755,12 @@ class File:
                 list_elements.append(element)
                 if i == len(things):
                     break
-                if things[i].type != Node.Type.Comma:
+                if things[i].type != ParserNode.Type.Comma:
                     raise Exception
                 i += 1
                 if i == len(things):
                     break
-            return Node(Node.Type.List, list_elements)
+            return ParserNode(ParserNode.Type.List, list_elements)
 
         return None
 
@@ -741,119 +768,119 @@ class File:
         (
             "assignment",
             [
-                (lambda elem_0: elem_0.type == Node.Type.Identifier),
-                (lambda elem_1: elem_1.type == Node.Type.InfixOperator and elem_1.value == '='),
+                (lambda elem_0: elem_0.type == ParserNode.Type.Identifier),
+                (lambda elem_1: elem_1.type == ParserNode.Type.InfixOperator and elem_1.value == '='),
                 (lambda elem_2: elem_2.type.is_expression()),
             ],
-            (lambda arr: Node(Node.Type.Assignment, (arr[0].value, arr[2]))),
+            (lambda arr: ParserNode(ParserNode.Type.Assignment, (arr[0].value, arr[2]))),
         ),
         (
             "for_loop_expression",
             [
                 (lambda elem_0: True),
-                (lambda elem_1: elem_1.type == Node.Type.Identifier),
-                (lambda elem_2: elem_2.type == Node.Type.InfixOperator and elem_2.value == ':'),
+                (lambda elem_1: elem_1.type == ParserNode.Type.Identifier),
+                (lambda elem_2: elem_2.type == ParserNode.Type.InfixOperator and elem_2.value == ':'),
                 (lambda elem_3: elem_3.type.is_iterable()),
             ],
-            (lambda arr: Node(Node.Type.ForLoopExpression, (arr[1].value, arr[3].value))),
+            (lambda arr: ParserNode(ParserNode.Type.ForLoopExpression, (arr[1].value, arr[3].value))),
         ),
         (
             "conditional_expression",
             [
-                (lambda elem_0: elem_0.type == Node.Type.Statement),
-                (lambda elem_1: elem_1.type in [Node.Type.Identifier, Node.Type.String, Node.Type.Integer, Node.Type.List,
-                                                Node.Type.Function]),
-                (lambda elem_2: elem_2.type == Node.Type.InfixOperator and not elem_2.value in ['==', '<', '>', '>=',
+                (lambda elem_0: elem_0.type == ParserNode.Type.Statement),
+                (lambda elem_1: elem_1.type in [ParserNode.Type.Identifier, ParserNode.Type.String, ParserNode.Type.Integer, ParserNode.Type.List,
+                                                ParserNode.Type.Function]),
+                (lambda elem_2: elem_2.type == ParserNode.Type.InfixOperator and not elem_2.value in ['==', '<', '>', '>=',
                                                                                                '<=', '%']),
-                (lambda elem_3: elem_3.type in [Node.Type.Identifier, Node.Type.String, Node.Type.Integer, Node.Type.List,
-                                                Node.Type.Function]),
+                (lambda elem_3: elem_3.type in [ParserNode.Type.Identifier, ParserNode.Type.String, ParserNode.Type.Integer, ParserNode.Type.List,
+                                                ParserNode.Type.Function]),
             ],
-            (lambda arr: Node(Node.Type.ConditionalExpression, (arr[0].value, arr[1].value, arr[2].value))),
+            (lambda arr: ParserNode(ParserNode.Type.ConditionalExpression, (arr[0].value, arr[1].value, arr[2].value))),
         ),
         (
             "prefix_operation",
             [
-                (lambda elem_0: elem_0.type == Node.Type.PrefixOperator and elem_0.value != '°'),
+                (lambda elem_0: elem_0.type == ParserNode.Type.PrefixOperator and elem_0.value != '°'),
                 (lambda elem_1: elem_1.type.is_expression()),
             ],
-            (lambda arr: Node(Node.Type.PrefixOperation, (arr[0].value, arr[1]))),
+            (lambda arr: ParserNode(ParserNode.Type.PrefixOperation, (arr[0].value, arr[1]))),
         ),
         (
             "prefix_operation",
             [
-                (lambda elem_0: elem_0.type == Node.Type.InfixOperator and elem_0.value == '-'),
+                (lambda elem_0: elem_0.type == ParserNode.Type.InfixOperator and elem_0.value == '-'),
                 (lambda elem_1: elem_1.type.is_expression()),
             ],
-            (lambda arr: Node(Node.Type.PrefixOperation, ('-', arr[1]))),
+            (lambda arr: ParserNode(ParserNode.Type.PrefixOperation, ('-', arr[1]))),
         ),
         (
             "postfix_operation",
             [
                 (lambda elem_0: elem_0.type.is_expression()),
-                (lambda elem_1: elem_1.type == Node.Type.PostfixOperator),
+                (lambda elem_1: elem_1.type == ParserNode.Type.PostfixOperator),
             ],
-            (lambda arr: Node(Node.Type.PostfixOperation, (arr[0], arr[1].value))),
+            (lambda arr: ParserNode(ParserNode.Type.PostfixOperation, (arr[0], arr[1].value))),
         ),
         (
             "infix_operation",
             [
                 (lambda elem_0: elem_0.type.is_expression()),
-                (lambda elem_1: elem_1.type == Node.Type.InfixOperator and elem_1.value != '='),
+                (lambda elem_1: elem_1.type == ParserNode.Type.InfixOperator and elem_1.value != '='),
                 (lambda elem_2: elem_2.type.is_expression()),
             ],
-            (lambda arr: Node(Node.Type.InfixOperation, (arr[0], arr[1].value, arr[2]))),
+            (lambda arr: ParserNode(ParserNode.Type.InfixOperation, (arr[0], arr[1].value, arr[2]))),
         ),
         (
             "declaration_assignment",
             [
-                (lambda elem_0: elem_0.type == Node.Type.PrefixOperator and elem_0.value == '°'),
-                (lambda elem_1: elem_1.type == Node.Type.Assignment),
+                (lambda elem_0: elem_0.type == ParserNode.Type.PrefixOperator and elem_0.value == '°'),
+                (lambda elem_1: elem_1.type == ParserNode.Type.Assignment),
             ],
-            (lambda arr: Node(Node.Type.DeclarationAssignment, arr[1].value)),
+            (lambda arr: ParserNode(ParserNode.Type.DeclarationAssignment, arr[1].value)),
         ),
         (
             "function_call_or_list_indexing",
             [
                 (lambda elem_0: elem_0.type.is_expression()),
-                (lambda elem_1: elem_1.type == Node.Type.Block and len(elem_1.value) == 0),
+                (lambda elem_1: elem_1.type == ParserNode.Type.Block and len(elem_1.value) == 0),
             ],
-            (lambda arr: Node(Node.Type.FunctionCallOrListIndexing, (arr[0], []))),
+            (lambda arr: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (arr[0], []))),
         ),
         (
             "function_call_or_list_indexing",
             [
                 (lambda elem_0: elem_0.type.is_expression()),
-                (lambda elem_1: elem_1.type == Node.Type.Block and len(elem_1.value) == 1),
+                (lambda elem_1: elem_1.type == ParserNode.Type.Block and len(elem_1.value) == 1),
             ],
-            (lambda arr: Node(Node.Type.FunctionCallOrListIndexing, (arr[0], [arr[1].value[0]]))),
+            (lambda arr: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (arr[0], [arr[1].value[0]]))),
         ),
         (
             "function_call_or_list_indexing",
             [
                 (lambda elem_0: elem_0.type.is_expression()),
-                (lambda elem_1: elem_1.type == Node.Type.List),
+                (lambda elem_1: elem_1.type == ParserNode.Type.List),
             ],
-            (lambda arr: Node(Node.Type.FunctionCallOrListIndexing, (arr[0], arr[1].value))),
+            (lambda arr: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (arr[0], arr[1].value))),
         ),
         (
             "if_statement",
             [
-                (lambda elem_0: elem_0.type == Node.Type.Statement and elem_0.value == "if"),
+                (lambda elem_0: elem_0.type == ParserNode.Type.Statement and elem_0.value == "if"),
                 (lambda elem_1: elem_1.type.is_expression()),
                 (lambda elem_2: elem_2.type.is_expression()),
             ],
-            (lambda arr: Node(Node.Type.IfStatement, (arr[1], arr[2]))),
+            (lambda arr: ParserNode(ParserNode.Type.IfStatement, (arr[1], arr[2]))),
         ),
         (
             "if_else_statement",
             [
-                (lambda elem_0: elem_0.type == Node.Type.Statement and elem_0.value == "if"),
+                (lambda elem_0: elem_0.type == ParserNode.Type.Statement and elem_0.value == "if"),
                 (lambda elem_1: elem_1.type.is_expression()),
                 (lambda elem_2: elem_2.type.is_expression()),
-                (lambda elem_3: elem_3.type == Node.Type.Statement and elem_3.value == "else"),
+                (lambda elem_3: elem_3.type == ParserNode.Type.Statement and elem_3.value == "else"),
                 (lambda elem_4: elem_4.type.is_expression()),
             ],
-            (lambda arr: Node(Node.Type.IfElseStatement, (arr[1], arr[2], arr[4]))),
+            (lambda arr: ParserNode(ParserNode.Type.IfElseStatement, (arr[1], arr[2], arr[4]))),
         ),
     ]
 
@@ -918,7 +945,7 @@ class File:
             return final_node
 
         things = self.repeatedly_transform_thing_list(things)
-        final_node = Node(Node.Type.Block, things)
+        final_node = ParserNode(ParserNode.Type.Block, things)
         return final_node
 
     def is_boolean(self):
@@ -927,25 +954,25 @@ class File:
     def parse_boolean(self):
         if self.slice(5) == 'False':
             self.position += 5
-            return Node(Node.Type.Boolean, self.slice(5))
+            return ParserNode(ParserNode.Type.Boolean, self.slice(5))
         elif self.slice(4) == 'True':
             self.position += 4
-            return Node(Node.Type.Boolean, self.slice(4))
+            return ParserNode(ParserNode.Type.Boolean, self.slice(4))
 
     def is_block(self):
         return self.get() == '{'
 
     def parse_block(self):
-        return self.parse_general_block(Node.Type.OpeningCurly,
-                                        Node.Type.ClosingCurly)
+        return self.parse_general_block(ParserNode.Type.OpeningCurly,
+                                        ParserNode.Type.ClosingCurly)
 
     def parse(self):
         # self.check_start()
         # self.skip_useless()
         # block = self.parse_block()
         # self.check_end()
-        # return Node()
-        return self.parse_general_block(Node.Type.Start, Node.Type.End)
+        # return ParserNode()
+        return self.parse_general_block(ParserNode.Type.Start, ParserNode.Type.End)
 
     def check_start(self):
         if not self.slice(5) == 'START' in self.content:
@@ -964,7 +991,7 @@ class File:
     def parse_builtin_identifier(self):
         self.position += 1
         name = self.parse_identifier().value
-        return Node(Node.Type.BuiltinIdentifier, name)
+        return ParserNode(ParserNode.Type.BuiltinIdentifier, name)
 
     def is_prefix_operator(self):
         return any([self.slice(len(op)) == op for op in self.prefix_operators])
@@ -973,7 +1000,7 @@ class File:
         for op in self.prefix_operators:
             if self.slice(len(op)) == op:
                 self.position += len(op)
-                return Node(Node.Type.PrefixOperator, op)
+                return ParserNode(ParserNode.Type.PrefixOperator, op)
         raise Exception
 
     def is_statement(self):
@@ -989,14 +1016,14 @@ class File:
         for i in range(5):
             if self.slice(i) in self.statements:
                 self.position += i
-                return Node(Node.Type.Statement,
+                return ParserNode(ParserNode.Type.Statement,
                             self.content[self.position - i:self.position])
 
     def is_type_assignment(self):
         ...
 
     def return_string(self):
-        return Node(Node.Type.String, self.string)
+        return ParserNode(ParserNode.Type.String, self.string)
 
     def parse_thing(self, no_blocks=False):
         self.skip_useless()
@@ -1040,7 +1067,7 @@ class File:
         while self.get() in string.ascii_letters + '_' + string.digits:
             identifier += self.get()
             self.position += 1
-        return Node(Node.Type.Identifier, identifier)
+        return ParserNode(ParserNode.Type.Identifier, identifier)
 
     # def is_integer(self):
     #     return self.get() in string.digits
@@ -1051,7 +1078,7 @@ class File:
     #         integer *= 10
     #         integer += int(self.get())
     #         self.position += 1
-    #     return Node(Node.Type.Integer, integer)
+    #     return ParserNode(ParserNode.Type.Integer, integer)
 
     def is_hex(self):
         return self.slice(2) == '0x' and self.content[
@@ -1065,7 +1092,7 @@ class File:
             hex_number += self.get()
             self.position += 1
 
-        return Node(Node.Type.Hexadecimal, hex_number)
+        return ParserNode(ParserNode.Type.Hexadecimal, hex_number)
 
     def is_oct(self):
         return self.slice(2) == '0o' and self.content[self.position + 2] in '01234567'
@@ -1078,7 +1105,7 @@ class File:
             oct_number += self.get()
             self.position += 1
 
-        return Node(Node.Type.Octal, oct_number)
+        return ParserNode(ParserNode.Type.Octal, oct_number)
 
     def is_bin(self):
         return self.slice(2) == '0b' and self.content[self.position + 2] in ['0', '1']
@@ -1091,7 +1118,7 @@ class File:
             bin_number += self.get()
             self.position += 1
 
-        return Node(Node.Type.Binary, bin_number)
+        return ParserNode(ParserNode.Type.Binary, bin_number)
 
     def is_number(self):
         if self.get() == '.' and self.content[self.position + 1] in string.digits:
@@ -1108,7 +1135,7 @@ class File:
 
         if self.slice(3) in ['NaN', 'inf']:
             self.position += 3
-            return Node(Node.Type.Float, self.content[self.position - 3: self.position])
+            return ParserNode(ParserNode.Type.Float, self.content[self.position - 3: self.position])
 
         while self.get() in string.digits + '.' and not exponential == 1:
             if points == 0:
@@ -1143,9 +1170,9 @@ class File:
             number *= 10 ** exponent
 
         if points == 1 or exponential == 1:
-            return Node(Node.Type.Float, number)
+            return ParserNode(ParserNode.Type.Float, number)
         else:
-            return Node(Node.Type.Integer, number)
+            return ParserNode(ParserNode.Type.Integer, number)
 
     def is_postfix_operator(self):
         return self.get() in ['!', '?']
@@ -1153,7 +1180,7 @@ class File:
     def parse_postfix_operator(self):
         c = self.get()
         self.position += 1
-        return Node(Node.Type.PostfixOperator, c)
+        return ParserNode(ParserNode.Type.PostfixOperator, c)
 
     def is_infix_operator(self):
         if self.slice(3) in ['//=', 'and', 'not']:
@@ -1170,18 +1197,18 @@ class File:
         if self.slice(3) in ['//=', 'and', 'not']:
             s = self.slice(3)
             self.position += 3
-            return Node(Node.Type.InfixOperator, s)
+            return ParserNode(ParserNode.Type.InfixOperator, s)
         elif self.slice(2) in [
             '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
             '<=', 'or'
         ]:
             s = self.slice(2)
             self.position += 2
-            return Node(Node.Type.InfixOperator, s)
+            return ParserNode(ParserNode.Type.InfixOperator, s)
         elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.']:
             c = self.get()
             self.position += 1
-            return Node(Node.Type.InfixOperator, c)
+            return ParserNode(ParserNode.Type.InfixOperator, c)
         raise Exception
 
     def is_start(self):
@@ -1189,28 +1216,28 @@ class File:
 
     def parse_start(self):
         self.position += 5
-        return Node(Node.Type.Start, None)
+        return ParserNode(ParserNode.Type.Start, None)
 
     def is_end(self):
         return self.slice(3) == "END"
 
     def parse_end(self):
         self.position += 3
-        return Node(Node.Type.End, None)
+        return ParserNode(ParserNode.Type.End, None)
 
     def is_opening_curly(self):
         return self.get() == '{'
 
     def parse_opening_curly(self):
         self.position += 1
-        return Node(Node.Type.OpeningCurly, None)
+        return ParserNode(ParserNode.Type.OpeningCurly, None)
 
     def is_closing_curly(self):
         return self.get() == '}'
 
     def parse_closing_curly(self):
         self.position += 1
-        return Node(Node.Type.ClosingCurly, None)
+        return ParserNode(ParserNode.Type.ClosingCurly, None)
 
     def is_type(self):
         for typename in [
@@ -1228,7 +1255,7 @@ class File:
         ]:
             if self.slice(len(typename)) == typename:
                 self.position += len(typename)
-                return Node(Node.Type.Type, typename)
+                return ParserNode(ParserNode.Type.Type, typename)
         raise Exception
 
     def is_comma(self):
@@ -1236,7 +1263,7 @@ class File:
 
     def parse_comma(self):
         self.position += 1
-        return Node(Node.Type.Comma, None)
+        return ParserNode(ParserNode.Type.Comma, None)
 
     def is_import_statement(self):
         return self.slice(3) == 'lib'
@@ -1246,7 +1273,7 @@ class File:
         self.skip_useless()
         lib = self.parse_identifier()
         self.skip_useless()
-        return Node(Node.Type.Statement, ('lib', lib))
+        return ParserNode(ParserNode.Type.Statement, ('lib', lib))
 
     def is_python_import_statement(self):
         return self.slice(5) == 'pylib'
@@ -1256,7 +1283,7 @@ class File:
         self.skip_useless()
         lib = self.parse_identifier()
         self.skip_useless()
-        return Node(Node.Type.Statement, ('pylib', lib))
+        return ParserNode(ParserNode.Type.Statement, ('pylib', lib))
 
     def is_string(self):
         return self.get() in ['"', "'"]
@@ -1271,14 +1298,14 @@ class File:
             s += self.get()
             self.position += 1
         self.position += 1
-        return Node(Node.Type.String, s)
+        return ParserNode(ParserNode.Type.String, s)
 
     def is_colon(self):
         return self.get() == ':'
 
     def parse_colon(self):
         self.position += 1
-        return Node(Node.Type.Colon, ':')
+        return ParserNode(ParserNode.Type.Colon, ':')
 
     def is_try(self):
         return self.slice(3) == 'try'
@@ -1318,7 +1345,7 @@ class File:
         except_ = self.parse_block()
         self.skip_useless()
 
-        return Node(Node.Type.Try, {"try_block": try_, "error": error, "except_block": except_})
+        return ParserNode(ParserNode.Type.Try, {"try_block": try_, "error": error, "except_block": except_})
 
     def is_for_loop(self):
         return self.slice(3) == 'for'
@@ -1351,7 +1378,7 @@ class File:
             self.skip_useless()
         self.parse_block()
 
-        return Node(Node.Type.ForLoop, {'iterated_variable': var, 'iterable': iter_})
+        return ParserNode(ParserNode.Type.ForLoop, {'iterated_variable': var, 'iterable': iter_})
 
     def is_class(self):
         return self.slice(2) == 'cl'
@@ -1378,7 +1405,7 @@ class File:
         self.parse_closing_curly()
         self.skip_useless()
 
-        return Node(Node.Type.Class, {'name': name, 'function_names': functions})
+        return ParserNode(ParserNode.Type.Class, {'name': name, 'function_names': functions})
 
     def is_function(self):
         return self.slice(2) == "fn"
@@ -1451,7 +1478,7 @@ class File:
         self.skip_useless()
         res["body"] = self.parse_function_body()
         self.skip_useless()
-        return Node(Node.Type.Function, res)
+        return ParserNode(ParserNode.Type.Function, res)
 
     def is_boolean(self):
         for s in ["True", "False"]:
@@ -1463,7 +1490,7 @@ class File:
         for s in ["True", "False"]:
             if self.slice(len(s)) == s:
                 self.position += len(s)
-                return Node(Node.Type.Boolean, s == "True")
+                return ParserNode(ParserNode.Type.Boolean, s == "True")
 
 
 def main(filename):
@@ -1472,7 +1499,7 @@ def main(filename):
         contents = f.read()
     file = File(contents)
     root_node = file.parse()
-    debug_print("Root Node:")
+    debug_print("Root ParserNode:")
     debug_print_repr(root_node)
     debug_print("")
     debug_print("Interpreting...")
