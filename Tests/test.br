@@ -1,3 +1,5 @@
+START
+
 l = {1, 2, 3}
 
 fn x{_list} {
@@ -7,7 +9,7 @@ fn x{_list} {
         res.append{i!}  § Hi
     }
 
-    -> {}
+    -> res
 
     §§§
     multi-
