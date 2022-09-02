@@ -10,6 +10,10 @@ START
 #drucke{hex}
 #drucke{bin}
 
-§ °list = #max{{4, 6, 8}}
+§§§
+r = #round{0.57, 1}
+#drucke{r}
+°list = #max{{4, 6, 8}}
+§§§
 
 END

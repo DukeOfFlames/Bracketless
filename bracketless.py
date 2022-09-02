@@ -706,6 +706,15 @@ class Builtins:
 
     builtins["all"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_all})
 
+    def builtin_round(execution_environment, params):
+        if len(params) != 2:
+            raise Exception
+
+        num = params[0]
+        position = params[1]
+        return InterpreterNode(InterpreterNode.Type.Float, round(num.value, position.value))
+
+    builtins["round"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_round})
 
 class Error(Exception):  # TODO: Implement in own language
     def __init__(self, error_name, details):
