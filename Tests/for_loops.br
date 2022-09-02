@@ -1,0 +1,7 @@
+START
+for n : {#range{5}} {
+    for i : {#range{n}} {
+        #drucke{i}
+    }
+}
+END

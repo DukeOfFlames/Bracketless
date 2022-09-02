@@ -316,6 +316,7 @@ class ParserNode:
         IfStatement = 38
         IfElseStatement = 39
         InternalInterpreterNode = 40
+        ForStatement = 41
 
         def is_expression(self):
             return self in [
@@ -582,6 +583,23 @@ class ParserNode:
                 consequent = self.value[1].interpret(execution_environment)
             else:
                 alternative = self.value[2].interpret(execution_environment)
+            return None
+
+        if self.type == ParserNode.Type.ForStatement:
+            identifier = self.value[0]
+            iterable = self.value[1]
+            block = self.value[2]
+            iterable = iterable.interpret(execution_environment)
+            if iterable.type != InterpreterNode.Type.List:
+                raise Exception(
+                    f"For-loop contains {iterable.type}, which is not iterable!"
+                )
+            for elem in iterable.value:
+                with execution_environment.run_in_scope(
+                    execution_environment.current_scope()
+                ):
+                    execution_environment.define_variable(identifier, elem)
+                    block.interpret(execution_environment)
             return None
 
         if self.type == ParserNode.Type.Identifier:
@@ -1218,6 +1236,24 @@ class File:
                 )
             ),
         ),
+        (
+            "for_statement",
+            [
+                (
+                    lambda elem_0: elem_0.type == ParserNode.Type.Statement
+                    and elem_0.value == "for"
+                ),
+                (lambda elem_1: elem_1.type == ParserNode.Type.Identifier),
+                (lambda elem_2: elem_2.type == ParserNode.Type.Colon),
+                (lambda elem_3: elem_3.type.is_expression()),
+                (lambda elem_4: elem_4.type.is_expression()),
+            ],
+            (
+                lambda arr: ParserNode(
+                    ParserNode.Type.ForStatement, (arr[1].value, arr[3], arr[4])
+                )
+            ),
+        ),
     ]
 
     recognize_patterns_dict = dict()
@@ -1245,6 +1281,7 @@ class File:
         recognize_list = [
             "if_else_statement",
             "if_statement",
+            "for_statement",
             "function_call_or_list_indexing",
             "postfix_operation",
             "infix_operation",
@@ -1378,7 +1415,6 @@ class File:
             (self.is_function, self.parse_function),
             (self.is_end, self.parse_end),
             (self.is_string, self.parse_string),
-            (self.is_for_loop, self.parse_for),
             (self.is_try, self.parse_try),
             (self.is_statement, self.parse_statement),
             (self.is_hex, self.parse_hex),
@@ -1737,41 +1773,6 @@ class File:
         return ParserNode(
             ParserNode.Type.Try,
             {"try_block": try_, "error": error, "except_block": except_},
-        )
-
-    def is_for_loop(self):
-        return self.slice(3) == "for"
-
-    def parse_for_loop_var(self):
-        if not self.is_identifier():
-            raise Exception
-        return self.parse_identifier().value
-
-    def parse_for_loop_keyword(self):
-        if self.slice(3) != "for":
-            raise Exception
-        self.position += 3
-
-    def parse_for(self):
-        self.parse_for_loop_keyword()
-        self.skip_useless()
-        var = self.parse_for_loop_var()
-        self.skip_useless()
-        self.parse_colon()
-        self.skip_useless()
-        if self.is_opening_curly():
-            iter_ = self.parse_block()
-            self.skip_useless()
-        elif self.is_string():
-            iter_ = self.parse_string()
-            self.skip_useless()
-        elif self.is_identifier():
-            iter_ = self.parse_identifier()
-            self.skip_useless()
-        self.parse_block()
-
-        return ParserNode(
-            ParserNode.Type.ForLoop, {"iterated_variable": var, "iterable": iter_}
         )
 
     def is_class(self):
