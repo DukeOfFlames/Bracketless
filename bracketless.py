@@ -319,7 +319,7 @@ class ParserNode:
 
         if self.type == ParserNode.Type.FunctionCallOrListIndexing:
             func_or_list_expr = self.value[0]
-            arg_values = [
+            param_values = [
                 value.interpret(execution_environment)
                 for value in self.value[1]
             ]
@@ -327,27 +327,27 @@ class ParserNode:
             if func_or_list.type == InterpreterNode.Type.List:
                 lst = func_or_list
                 lst = lst.value
-                if len(arg_values) != 1:
+                if len(param_values) != 1:
                     raise Exception
-                index = arg_values[0]
+                index = param_values[0]
                 if index.type != InterpreterNode.Type.Integer:
                     raise Exception
                 index = index.value
                 return lst[index]
             if func_or_list.type == InterpreterNode.Type.Function:
                 func = func_or_list
-                func_arg_values = arg_values
+                func_param_values = param_values
                 func = func.value
                 if func["type"] == FunctionType.External:
                     func_body = func["body"]
-                    func_arg_names = [name for (name, type) in func["arg_names"]]
+                    func_param_names = [name for (name, type) in func["param_names"]]
                     # The scope of a function is a child of the scope the function was defined in
                     with execution_environment.run_in_scope(func["parent_scope"]):
-                        if len(func_arg_names) != len(func_arg_values):
+                        if len(func_param_names) != len(func_param_values):
                             raise Exception
-                        for i in range(len(func_arg_names)):
-                            execution_environment.define_variable(func_arg_names[i],
-                                                                  func_arg_values[i])
+                        for i in range(len(func_param_names)):
+                            execution_environment.define_variable(func_param_names[i],
+                                                                  func_param_values[i])
                         try:
                             func_body.interpret(execution_environment)
                         except Return as r:
@@ -357,7 +357,7 @@ class ParserNode:
                     return return_value
                 elif func["type"] == FunctionType.Internal:
                     func_body = func["body"]
-                    return func_body(execution_environment, func_arg_values)
+                    return func_body(execution_environment, func_param_values)
                 else:
                     raise Exception
             debug_print_repr(func_or_list_expr)
@@ -492,7 +492,7 @@ class ParserNode:
                 interpreted_self = InterpreterNode(
                     InterpreterNode.Type.Function, {
                         "type": FunctionType.External,
-                        "arg_names": self.value["arg_names"],
+                        "param_names": self.value["param_names"],
                         "body": self.value["body"],
                         "parent_scope": execution_environment.current_scope()
                     }
@@ -1518,7 +1518,7 @@ class File:
         if self.is_function_name():
             res["name"] = self.parse_function_name()
             self.skip_useless()
-        res["arg_names"] = self.parse_function_parameter_list()
+        res["param_names"] = self.parse_function_parameter_list()
         self.skip_useless()
         res["body"] = self.parse_function_body()
         self.skip_useless()
