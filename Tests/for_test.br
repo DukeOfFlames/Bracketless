@@ -3,11 +3,13 @@ START
 °a = 0
 
 fn f{}{
-    -> °x = 1
+    -> °x = {1,}
 }
 
-for i : f{}{
+for i : {f{}}{
     a = i
 }
+
+#drucke{a}
 
 END
