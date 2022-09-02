@@ -1311,7 +1311,7 @@ class File:
 
         thing = self.parse_thing(no_blocks=True)
         if thing.type != opening_type:
-            raise Exception
+            raise Exception(f"{thing.type} is not {opening_type}")
         things = []
         while True:
             thing = self.parse_thing()
