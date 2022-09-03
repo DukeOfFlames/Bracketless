@@ -1,0 +1,9 @@
+START
+°dot = fn {f} { -> fn {g} { -> f . g } }
+°square = fn {x} { -> x ^ 2 }
+°add = fn {x} { -> fn {y} { -> x + y } }
+°permute_3 = fn {x} { -> fn {y} { -> fn {z} { -> {y - x} * {z - y} * {z - x} } } }
+°permute_4 = fn {x} { -> fn {y} { -> fn {z} { -> fn {w} { -> {y - x} * {z - y} * {z - x} * {w - z} * {w - y} * {w - x} } } } }
+°res = {dot}{dot}{dot}{dot}{dot}{dot}{add}{square}{3}{square}{4}
+#drucke{res}
+END
