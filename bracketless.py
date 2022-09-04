@@ -144,10 +144,10 @@ class TopScope:
     def get_variable(self, name):
         raise Exception(f"Could not find variable named {repr(name)}")
 
-    def define_variable(self, name):
+    def define_variable(self, name, value):
         raise Exception(f"Could not define variable named {repr(name)}")
 
-    def set_variable(self, name):
+    def set_variable(self, name, value):
         raise Exception(f"Could not find variable named {repr(name)}")
 
 
@@ -511,6 +511,9 @@ class ParserNode:
 
         if self.type == ParserNode.Type.Integer:
             return InterpreterNode(InterpreterNode.Type.Integer, self.value)
+
+        if self.type == ParserNode.Type.Float:
+            return InterpreterNode(InterpreterNode.Type.Float, self.value)
 
         if self.type == ParserNode.Type.Boolean:
             return InterpreterNode(InterpreterNode.Type.Boolean, self.value)
