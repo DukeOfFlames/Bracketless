@@ -259,6 +259,7 @@ class ParserNode:
         IfElseStatement = 39
         InternalInterpreterNode = 40
         ForStatement = 41
+        WhileStatement = 42
 
         def is_expression(self):
             return self in [
@@ -384,8 +385,12 @@ class ParserNode:
                 v_as_float = v.convert_to_float()
                 if v_as_float != None:
                     return InterpreterNode(InterpreterNode.Type.Float, - v.value)
+            if op == 'not':
+                if v.type == InterpreterNode.Type.Boolean:
+                    return InterpreterNode(InterpreterNode.Type.Boolean, not v.value)
+            debug_print_repr(self.value)
             raise Exception(
-                f"Could not interpret PrefixOperation with {self.value}")
+                f"Could not interpret PrefixOperation")
 
         if self.type == ParserNode.Type.PostfixOperation:
             v = self.value[0].interpret(execution_environment)
@@ -423,6 +428,9 @@ class ParserNode:
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
                     return InterpreterNode(InterpreterNode.Type.Float, lhs_as_float.value ** rhs_as_float.value)
+            if op == '%':
+                if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
+                    return InterpreterNode(InterpreterNode.Type.Integer, lhs.value % rhs.value)
             if op == "==":
                 if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
                     return InterpreterNode(InterpreterNode.Type.Boolean, lhs.value == rhs.value)
@@ -437,8 +445,11 @@ class ParserNode:
                             execution_environment)
 
                     return InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": combined_func})
+            debug_print_repr(lhs)
+            debug_print_repr(op)
+            debug_print_repr(rhs)
             raise Exception(
-                f"Could not interpret InfixOperation with ({lhs}, {op}, {rhs})")
+                f"Could not interpret InfixOperation")
 
         if self.type == ParserNode.Type.IfStatement:
             predicate = self.value[0].interpret(execution_environment)
@@ -469,6 +480,18 @@ class ParserNode:
                 with execution_environment.run_in_scope(execution_environment.current_scope()):
                     execution_environment.define_variable(identifier, elem)
                     block.interpret(execution_environment)
+            return None
+
+        if self.type == ParserNode.Type.WhileStatement:
+            condition = self.value[0]
+            block = self.value[1]
+            while True:
+                should_continue = condition.interpret(execution_environment)
+                if should_continue.type != InterpreterNode.Type.Boolean:
+                    raise Exception
+                if not should_continue.value:
+                    break
+                block.interpret(execution_environment)
             return None
 
         if self.type == ParserNode.Type.Identifier:
@@ -724,12 +747,15 @@ class Builtins:
     builtins["all"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_all})
 
     def builtin_round(execution_environment, params):
-        if len(params) != 2:
+        if len(params) == 1:
+            num = params[0]
+            return InterpreterNode(InterpreterNode.Type.Integer, round(num.value))
+        elif len(params) == 2:
+            num = params[0]
+            position = params[1]
+            return InterpreterNode(InterpreterNode.Type.Float, round(num.value, position.value))
+        else:
             raise Exception
-
-        num = params[0]
-        position = params[1]
-        return InterpreterNode(InterpreterNode.Type.Float, round(num.value, position.value))
 
     builtins["round"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_round})
 
@@ -757,7 +783,8 @@ class File:
         self.position = 0
         self.line_counter = 0
         self.column_counter = 0
-        self.prefix_operators = ['->', '°']
+        self.prefix_operators = ['->', '°', 'not']
+        self.statements = ['if', 'elif', 'else', 'while', 'for']
 
         self.separators = ';:.'
         self.pos1 = 0  # for saving positions
@@ -971,6 +998,15 @@ class File:
             ],
             (lambda arr: ParserNode(ParserNode.Type.ForStatement, (arr[1].value, arr[3], arr[4]))),
         ),
+        (
+            "while_statement",
+            [
+                (lambda elem_0: elem_0.type == ParserNode.Type.Statement and elem_0.value == "while"),
+                (lambda elem_1: elem_1.type.is_expression()),
+                (lambda elem_2: elem_2.type.is_expression()),
+            ],
+            (lambda arr: ParserNode(ParserNode.Type.WhileStatement, (arr[1], arr[2]))),
+        ),
     ]
 
     recognize_patterns_dict = dict()
@@ -994,6 +1030,7 @@ class File:
             "if_else_statement",
             "if_statement",
             "for_statement",
+            "while_statement",
             "function_call_or_list_indexing",
             "postfix_operation",
             "infix_operation",
@@ -1094,20 +1131,15 @@ class File:
         raise Exception
 
     def is_statement(self):
-        self.statements = ['if', 'elif', 'else', 'while', 'for']
-
-        for i in range(5):
-
-            if self.slice(i) in self.statements:
+        for statement in self.statements:
+            if self.slice(len(statement)) == statement:
                 return True
 
     def parse_statement(self):
-
-        for i in range(5):
-            if self.slice(i) in self.statements:
-                self.position += i
-                return ParserNode(ParserNode.Type.Statement,
-                            self.content[self.position - i:self.position])
+        for statement in self.statements:
+            if self.slice(len(statement)) == statement:
+                self.position += len(statement)
+                return ParserNode(ParserNode.Type.Statement, statement)
 
     def is_type_assignment(self):
         ...
@@ -1123,6 +1155,9 @@ class File:
             (self.is_end, self.parse_end), (self.is_string, self.parse_string),
             (self.is_try, self.parse_try),
             (self.is_statement, self.parse_statement),
+            (self.is_prefix_operator, self.parse_prefix_operator),
+            (self.is_postfix_operator, self.parse_postfix_operator),
+            (self.is_infix_operator, self.parse_infix_operator),
             (self.is_hex, self.parse_hex),
             (self.is_bin, self.parse_bin),
             (self.is_number, self.parse_number),
@@ -1130,9 +1165,6 @@ class File:
             (self.is_python_import_statement, self.parse_python_import_statement),
             (self.is_boolean, self.parse_boolean),
             (self.is_identifier, self.parse_identifier),
-            (self.is_prefix_operator, self.parse_prefix_operator),
-            (self.is_postfix_operator, self.parse_postfix_operator),
-            (self.is_infix_operator, self.parse_infix_operator),
             ((self.is_opening_curly,
               self.parse_opening_curly) if no_blocks else
             (self.is_block, self.parse_block)),
@@ -1279,7 +1311,7 @@ class File:
             '<=', 'or'
         ]:
             return True
-        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.']:
+        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.', '%']:
             return True
 
     def parse_infix_operator(self):
@@ -1294,7 +1326,7 @@ class File:
             s = self.slice(2)
             self.position += 2
             return ParserNode(ParserNode.Type.InfixOperator, s)
-        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.']:
+        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.', '%']:
             c = self.get()
             self.position += 1
             return ParserNode(ParserNode.Type.InfixOperator, c)
