@@ -1,0 +1,15 @@
+START
+fn collatz{n} {
+    °len = 0
+    while {not {n == 1}} {
+        len = len + 1
+        if {{n % 2} == 0} {
+            n = #round{n / 2}
+        } else {
+            n = 3*n + 1
+        }
+    }
+    -> len
+}
+#drucke{collatz{871}}
+END
