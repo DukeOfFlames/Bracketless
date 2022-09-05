@@ -83,6 +83,14 @@ def inverse_factorial(f):
     return inverse_factorial_approximation(f)
 
 
+def bracketless_value_from_python_value(python_value):
+    if type(python_value) == int:
+        return InterpreterNode(InterpreterNode.Type.Integer, python_value)
+    if type(python_value) == float:
+        return InterpreterNode(InterpreterNode.Type.Float, python_value)
+    raise Exception
+
+
 class RichRepr:
     def __init__(self, lst):
         self.lst = lst
@@ -318,6 +326,8 @@ class ParserNode:
         InternalInterpreterNode = 40
         ForStatement = 41
         WhileStatement = 42
+        LibImportStatement = 43
+        PyLibImportStatement = 44
 
         def is_expression(self):
             return self in [
@@ -472,6 +482,14 @@ class ParserNode:
                         InterpreterNode.Type.Float, inverse_factorial(v_as_float.value)
                     )
             raise Exception(f"Could not interpret PostfixOperation with {self.value}")
+
+        if self.type == ParserNode.Type.InfixOperation and self.value[1] == ".":
+            obj = self.value[0].interpret(execution_environment)
+            attr = self.value[2]
+            if attr.type != ParserNode.Type.Identifier:
+                raise Exception
+            if obj.type == InterpreterNode.Type.PyLib:
+                return obj.lookup(attr.value)
 
         if self.type == ParserNode.Type.InfixOperation:
             lhs = self.value[0].interpret(execution_environment)
@@ -628,6 +646,13 @@ class ParserNode:
                 block.interpret(execution_environment)
             return None
 
+        if self.type == ParserNode.Type.PyLibImportStatement:
+            lib_name = self.value
+            lib = __import__(lib_name)
+            interpreted_self = InterpreterNode(InterpreterNode.Type.PyLib, lib)
+            execution_environment.define_variable(lib_name, interpreted_self)
+            return interpreted_self
+
         if self.type == ParserNode.Type.Identifier:
             name = self.value
             return execution_environment.get_variable(name)
@@ -701,6 +726,7 @@ class InterpreterNode:
         Hexadecimal = 35
         Binary = 36
         Octal = 37
+        PyLib = 38
 
     def __init__(self, type, value):
         self.type = type
@@ -733,6 +759,11 @@ class InterpreterNode:
         if self.type == InterpreterNode.Type.Integer:
             return InterpreterNode(InterpreterNode.Type.Float, self.value)
         return None
+
+    def lookup(self, name):
+        if self.type == InterpreterNode.Type.PyLib:
+            return bracketless_value_from_python_value(getattr(self.value, name))
+        raise Exception
 
 
 class Builtins:
@@ -1750,9 +1781,9 @@ class File:
     def parse_import_statement(self):
         self.position += 3
         self.skip_useless()
-        lib = self.parse_identifier()
+        lib = self.parse_identifier().value
         self.skip_useless()
-        return ParserNode(ParserNode.Type.Statement, ("lib", lib))
+        return ParserNode(ParserNode.Type.LibImportStatement, lib)
 
     def is_python_import_statement(self):
         return self.slice(5) == "pylib"
@@ -1760,9 +1791,9 @@ class File:
     def parse_python_import_statement(self):
         self.position += 5
         self.skip_useless()
-        lib = self.parse_identifier()
+        lib = self.parse_identifier().value
         self.skip_useless()
-        return ParserNode(ParserNode.Type.Statement, ("pylib", lib))
+        return ParserNode(ParserNode.Type.PyLibImportStatement, lib)
 
     def is_string(self):
         return self.get() in ['"', "'"]

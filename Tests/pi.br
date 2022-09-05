@@ -1,0 +1,4 @@
+START
+pylib math
+#drucke{math.pi}
+END
