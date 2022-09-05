@@ -107,8 +107,6 @@ class RichRepr:
             return RichRepr([({ParserNode.Type: "ParserNode", InterpreterNode.Type: "InterpreterNode"}[type(v)] + f".{v.name}", 0)])
         if type(v) in [ParserNode, InterpreterNode]:
             return RichRepr.from_any(v.type) + RichRepr.from_any(v.value).indent()
-        if type(v) == ExecutionEnvironment:
-            return RichRepr([("ExecutionEnvironment:", 0)]) + RichRepr.from_any(v.scopes).indent()
         if type(v) == Scope:
             return RichRepr([("Scope:", 0)]) + (RichRepr([("Variables:", 0)]) + RichRepr.from_any([name for name, value in v.vars.items()]).indent()).indent() + (RichRepr([("Parent Scope:", 0)]) + RichRepr.from_any(v.parent_scope).indent()).indent()
         if type(v) == TopScope:
@@ -180,44 +178,6 @@ class Scope:
             self.vars[name] = value
         else:
             self.parent_scope.set_variable(name, value)
-
-
-class ExecutionEnvironmentScopeRunner:
-    def __init__(self, execution_environment, parent_scope):
-        self.execution_environment = execution_environment
-        self.parent_scope = parent_scope
-
-    def __enter__(self):
-        self.execution_environment.enter_scope(self.parent_scope)
-
-    def __exit__(self, *args):
-        self.execution_environment.exit_scope()
-
-
-class ExecutionEnvironment:
-    def __init__(self):
-        self.scopes = [TopScope()]
-
-    def get_variable(self, name):
-        return self.current_scope().get_variable(name)
-
-    def define_variable(self, name, value):
-        self.current_scope().define_variable(name, value)
-
-    def set_variable(self, name, value):
-        self.current_scope().set_variable(name, value)
-
-    def current_scope(self):
-        return self.scopes[-1]
-
-    def enter_scope(self, parent_scope):
-        self.scopes.append(Scope(parent_scope))
-
-    def exit_scope(self):
-        self.scopes.pop()
-
-    def run_in_scope(self, parent_scope):
-        return ExecutionEnvironmentScopeRunner(self, parent_scope)
 
 
 class Return(Exception):
@@ -300,41 +260,41 @@ class ParserNode:
     def __repr__(self):
         raise Exception
 
-    def interpret(self, execution_environment):
+    def interpret(self, current_scope):
 
-        # debug_print_repr(execution_environment)
+        # debug_print_repr(current_scope)
 
         if self.type == ParserNode.Type.Block:
             if len(self.value) != 1:
                 # The scope of a block is always simply a child of the scope the block is being interpreted in
-                with execution_environment.run_in_scope(execution_environment.current_scope()):
-                    for thing in self.value:
-                        thing.interpret(execution_environment)
-                    debug_print("Environment at end of block:")
-                    debug_print_repr(execution_environment)
+                block_scope = Scope(current_scope)
+                for thing in self.value:
+                    thing.interpret(block_scope)
+                debug_print("Environment at end of block:")
+                debug_print_repr(block_scope)
                 return None
             else:
-                return self.value[0].interpret(execution_environment)
+                return self.value[0].interpret(current_scope)
 
         if self.type == ParserNode.Type.Assignment:
             name = self.value[0]
-            value = self.value[1].interpret(execution_environment)
-            execution_environment.set_variable(name, value)
+            value = self.value[1].interpret(current_scope)
+            current_scope.set_variable(name, value)
             return value
 
         if self.type == ParserNode.Type.DeclarationAssignment:
             name = self.value[0]
-            value = self.value[1].interpret(execution_environment)
-            execution_environment.define_variable(name, value)
+            value = self.value[1].interpret(current_scope)
+            current_scope.define_variable(name, value)
             return value
 
         if self.type == ParserNode.Type.FunctionCallOrListIndexing:
             func_or_list_expr = self.value[0]
             param_values = [
-                value.interpret(execution_environment)
+                value.interpret(current_scope)
                 for value in self.value[1]
             ]
-            func_or_list = func_or_list_expr.interpret(execution_environment)
+            func_or_list = func_or_list_expr.interpret(current_scope)
             if func_or_list.type == InterpreterNode.Type.List:
                 lst = func_or_list
                 lst = lst.value
@@ -353,22 +313,22 @@ class ParserNode:
                     func_body = func["body"]
                     func_param_names = [name for (name, type) in func["param_names"]]
                     # The scope of a function is a child of the scope the function was defined in
-                    with execution_environment.run_in_scope(func["parent_scope"]):
-                        if len(func_param_names) != len(func_param_values):
-                            raise Exception
-                        for i in range(len(func_param_names)):
-                            execution_environment.define_variable(func_param_names[i],
-                                                                  func_param_values[i])
-                        try:
-                            func_body.interpret(execution_environment)
-                        except Return as r:
-                            return_value = r.return_value
-                        else:
-                            return_value = None
+                    func_scope = Scope(func["parent_scope"])
+                    if len(func_param_names) != len(func_param_values):
+                        raise Exception
+                    for i in range(len(func_param_names)):
+                        func_scope.define_variable(func_param_names[i],
+                                                              func_param_values[i])
+                    try:
+                        func_body.interpret(func_scope)
+                    except Return as r:
+                        return_value = r.return_value
+                    else:
+                        return_value = None
                     return return_value
                 elif func["type"] == FunctionType.Internal:
                     func_body = func["body"]
-                    return func_body(execution_environment, func_param_values)
+                    return func_body(current_scope, func_param_values)
                 else:
                     raise Exception
             debug_print_repr(func_or_list_expr)
@@ -379,14 +339,14 @@ class ParserNode:
         if self.type == ParserNode.Type.Class:
             class_name = self.value[0]
             class_functions = [
-                value.interpret(execution_environment)
+                value.interpret(current_scope)
                 for value in self.value[1]
             ]
-            class_ = execution_environment.get_variable(class_name).value
+            class_ = current_scope.get_variable(class_name).value
 
         if self.type == ParserNode.Type.PrefixOperation:
             op = self.value[0]
-            v = self.value[1].interpret(execution_environment)
+            v = self.value[1].interpret(current_scope)
             if op == "->":
                 raise Return(v)
             if op == '-':
@@ -403,7 +363,7 @@ class ParserNode:
                 f"Could not interpret PrefixOperation")
 
         if self.type == ParserNode.Type.PostfixOperation:
-            v = self.value[0].interpret(execution_environment)
+            v = self.value[0].interpret(current_scope)
             op = self.value[1]
             if op == '!':
                 if v.type == InterpreterNode.Type.Integer:
@@ -415,7 +375,7 @@ class ParserNode:
             raise Exception(f"Could not interpret PostfixOperation with {self.value}")
 
         if self.type == ParserNode.Type.InfixOperation and self.value[1] == '.':
-            obj = self.value[0].interpret(execution_environment)
+            obj = self.value[0].interpret(current_scope)
             attr = self.value[2]
             if attr.type != ParserNode.Type.Identifier:
                 raise Exception
@@ -423,9 +383,9 @@ class ParserNode:
                 return obj.lookup(attr.value)
 
         if self.type == ParserNode.Type.InfixOperation:
-            lhs = self.value[0].interpret(execution_environment)
+            lhs = self.value[0].interpret(current_scope)
             op = self.value[1]
-            rhs = self.value[2].interpret(execution_environment)
+            rhs = self.value[2].interpret(current_scope)
             if op in ['+', '-', '*']:
                 func = {'+': (lambda x, y: x + y), '-': (lambda x, y: x - y), '*': (lambda x, y: x * y)}[op]
                 if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
@@ -454,13 +414,12 @@ class ParserNode:
                     return InterpreterNode(InterpreterNode.Type.Boolean, lhs.value == rhs.value)
             if op == '.':
                 if lhs.type == InterpreterNode.Type.Function and rhs.type == InterpreterNode.Type.Function:
-                    def combined_func(execution_environment, params):
+                    def combined_func(current_scope, params):
                         if len(params) != 1:
                             raise Exception
                         param = params[0]
                         return ParserNode(ParserNode.Type.FunctionCallOrListIndexing,
-                                    (ParserNode(ParserNode.Type.InternalInterpreterNode, lhs), [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (ParserNode(ParserNode.Type.InternalInterpreterNode, rhs), [ParserNode(ParserNode.Type.InternalInterpreterNode, param)]))])).interpret(
-                            execution_environment)
+                                    (ParserNode(ParserNode.Type.InternalInterpreterNode, lhs), [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (ParserNode(ParserNode.Type.InternalInterpreterNode, rhs), [ParserNode(ParserNode.Type.InternalInterpreterNode, param)]))])).interpret(None)
 
                     return InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": combined_func})
             debug_print_repr(lhs)
@@ -470,58 +429,58 @@ class ParserNode:
                 f"Could not interpret InfixOperation")
 
         if self.type == ParserNode.Type.IfStatement:
-            predicate = self.value[0].interpret(execution_environment)
+            predicate = self.value[0].interpret(current_scope)
             if predicate.type != InterpreterNode.Type.Boolean:
                 raise Exception
             if predicate.value:
-                consequent = self.value[1].interpret(execution_environment)
+                consequent = self.value[1].interpret(current_scope)
             return None
 
         if self.type == ParserNode.Type.IfElseStatement:
-            predicate = self.value[0].interpret(execution_environment)
+            predicate = self.value[0].interpret(current_scope)
             if predicate.type != InterpreterNode.Type.Boolean:
                 raise Exception
             if predicate.value:
-                consequent = self.value[1].interpret(execution_environment)
+                consequent = self.value[1].interpret(current_scope)
             else:
-                alternative = self.value[2].interpret(execution_environment)
+                alternative = self.value[2].interpret(current_scope)
             return None
 
         if self.type == ParserNode.Type.ForStatement:
             identifier = self.value[0]
             iterable = self.value[1]
             block = self.value[2]
-            iterable = iterable.interpret(execution_environment)
+            iterable = iterable.interpret(current_scope)
             if iterable.type != InterpreterNode.Type.List:
                 raise Exception(f"For-loop contains {iterable.type}, which is not iterable!")
             for elem in iterable.value:
-                with execution_environment.run_in_scope(execution_environment.current_scope()):
-                    execution_environment.define_variable(identifier, elem)
-                    block.interpret(execution_environment)
+                loop_scope = Scope(current_scope)
+                loop_scope.define_variable(identifier, elem)
+                block.interpret(loop_scope)
             return None
 
         if self.type == ParserNode.Type.WhileStatement:
             condition = self.value[0]
             block = self.value[1]
             while True:
-                should_continue = condition.interpret(execution_environment)
+                should_continue = condition.interpret(current_scope)
                 if should_continue.type != InterpreterNode.Type.Boolean:
                     raise Exception
                 if not should_continue.value:
                     break
-                block.interpret(execution_environment)
+                block.interpret(current_scope)
             return None
 
         if self.type == ParserNode.Type.PyLibImportStatement:
             lib_name = self.value
             lib = __import__(lib_name)
             interpreted_self = InterpreterNode(InterpreterNode.Type.PyLib, lib)
-            execution_environment.define_variable(lib_name, interpreted_self)
+            current_scope.define_variable(lib_name, interpreted_self)
             return interpreted_self
 
         if self.type == ParserNode.Type.Identifier:
             name = self.value
-            return execution_environment.get_variable(name)
+            return current_scope.get_variable(name)
 
         if self.type == ParserNode.Type.BuiltinIdentifier:
             name = self.value
@@ -533,7 +492,7 @@ class ParserNode:
                     InterpreterNode.Type.Function, {
                         "type": FunctionType.Internal,
                         "body": self.value["body"],
-                        "parent_scope": execution_environment.current_scope()
+                        "parent_scope": current_scope
                     }
                 )
             elif self.value["type"] == FunctionType.External:
@@ -542,17 +501,17 @@ class ParserNode:
                         "type": FunctionType.External,
                         "param_names": self.value["param_names"],
                         "body": self.value["body"],
-                        "parent_scope": execution_environment.current_scope()
+                        "parent_scope": current_scope
                     }
                 )
             else:
                 raise Exception
             if "name" in self.value.keys():
-                execution_environment.define_variable(self.value["name"], interpreted_self)
+                current_scope.define_variable(self.value["name"], interpreted_self)
             return interpreted_self
 
         if self.type == ParserNode.Type.List:
-            return InterpreterNode(InterpreterNode.Type.List, [elem.interpret(execution_environment) for elem in self.value])
+            return InterpreterNode(InterpreterNode.Type.List, [elem.interpret(current_scope) for elem in self.value])
 
         if self.type == ParserNode.Type.String:
             return InterpreterNode(InterpreterNode.Type.String, self.value)
@@ -629,13 +588,13 @@ class InterpreterNode:
 class Builtins:
     builtins = dict()
 
-    def drucke(execution_environment, params):
+    def drucke(current_scope, params):
         for param in params:
             output_print(param.representation())
 
     builtins["drucke"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": drucke})
 
-    def max(execution_environment, params):
+    def max(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -647,7 +606,7 @@ class Builtins:
 
     builtins["max"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": max})
 
-    def min(execution_environment, params):
+    def min(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -659,7 +618,7 @@ class Builtins:
 
     builtins["min"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": min})
 
-    def count(execution_environment, params):
+    def count(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -669,7 +628,7 @@ class Builtins:
 
     builtins["count"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": count})
 
-    def sum(execution_environment, params):
+    def sum(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -695,7 +654,7 @@ class Builtins:
 
     builtins["min"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": min})
 
-    def avg(execution_environment, params):
+    def avg(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -709,7 +668,7 @@ class Builtins:
 
     builtins["avg"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": avg})
 
-    def hex(execution_environment, params):
+    def hex(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -720,7 +679,7 @@ class Builtins:
 
     builtins["hex"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": hex})
 
-    def bin(execution_environment, params):
+    def bin(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -731,7 +690,7 @@ class Builtins:
 
     builtins["bin"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": bin})
 
-    def oct(execution_environment, params):
+    def oct(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -740,7 +699,7 @@ class Builtins:
 
         return InterpreterNode(InterpreterNode.Type.Octal, oct(lst.value))
 
-    def builtin_range(execution_environment, params):
+    def builtin_range(current_scope, params):
         if len(params) != 1:
             raise Exception
         end = params[0]
@@ -751,7 +710,7 @@ class Builtins:
 
     builtins["range"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_range})
 
-    def for_each(execution_environment, params):
+    def for_each(current_scope, params):
         if len(params) != 2:
             raise Exception
         lst, func = params
@@ -759,11 +718,11 @@ class Builtins:
             raise Exception
         if func.type != InterpreterNode.Type.Function:
             raise Exception
-        return InterpreterNode(InterpreterNode.Type.List, [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (ParserNode(ParserNode.Type.InternalInterpreterNode, func), [ParserNode(ParserNode.Type.InternalInterpreterNode, elem)])).interpret(execution_environment) for elem in lst.value])
+        return InterpreterNode(InterpreterNode.Type.List, [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (ParserNode(ParserNode.Type.InternalInterpreterNode, func), [ParserNode(ParserNode.Type.InternalInterpreterNode, elem)])).interpret(None) for elem in lst.value])
 
     builtins["for_each"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": for_each})
 
-    def builtin_all(execution_environment, params):
+    def builtin_all(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -777,7 +736,7 @@ class Builtins:
 
     builtins["all"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_all})
 
-    def builtin_round(execution_environment, params):
+    def builtin_round(current_scope, params):
         if len(params) == 1:
             num = params[0]
             return InterpreterNode(InterpreterNode.Type.Integer, round(num.value))
@@ -1622,7 +1581,7 @@ def main(filename):
     debug_print_repr(root_node)
     debug_print("")
     debug_print("Interpreting...")
-    root_node.interpret(ExecutionEnvironment())
+    root_node.interpret(TopScope())
     debug_print("")
 
 
