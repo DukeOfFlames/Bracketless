@@ -243,7 +243,7 @@ class ParserNode:
         Assignment = 14
         String = 15
         ConditionalExpression = 16  # WIP
-        Statement = 17
+        StatementKeyword = 17
         Function = 18
         ForLoop = 19  # WIP
         WhileLoop = 20  # WIP
@@ -923,7 +923,7 @@ class File:
         (
             "conditional_expression",
             [
-                (lambda elem_0: elem_0.type == ParserNode.Type.Statement),
+                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword),
                 (lambda elem_1: elem_1.type in [ParserNode.Type.Identifier, ParserNode.Type.String, ParserNode.Type.Integer, ParserNode.Type.List,
                                                 ParserNode.Type.Function]),
                 (lambda elem_2: elem_2.type == ParserNode.Type.InfixOperator and not elem_2.value in ['==', '<', '>', '>=',
@@ -1001,7 +1001,7 @@ class File:
         (
             "if_statement",
             [
-                (lambda elem_0: elem_0.type == ParserNode.Type.Statement and elem_0.value == "if"),
+                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "if"),
                 (lambda elem_1: elem_1.type.is_expression()),
                 (lambda elem_2: elem_2.type.is_expression()),
             ],
@@ -1010,10 +1010,10 @@ class File:
         (
             "if_else_statement",
             [
-                (lambda elem_0: elem_0.type == ParserNode.Type.Statement and elem_0.value == "if"),
+                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "if"),
                 (lambda elem_1: elem_1.type.is_expression()),
                 (lambda elem_2: elem_2.type.is_expression()),
-                (lambda elem_3: elem_3.type == ParserNode.Type.Statement and elem_3.value == "else"),
+                (lambda elem_3: elem_3.type == ParserNode.Type.StatementKeyword and elem_3.value == "else"),
                 (lambda elem_4: elem_4.type.is_expression()),
             ],
             (lambda arr: ParserNode(ParserNode.Type.IfElseStatement, (arr[1], arr[2], arr[4]))),
@@ -1021,7 +1021,7 @@ class File:
         (
             "for_statement",
             [
-                (lambda elem_0: elem_0.type == ParserNode.Type.Statement and elem_0.value == "for"),
+                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "for"),
                 (lambda elem_1: elem_1.type == ParserNode.Type.Identifier),
                 (lambda elem_2: elem_2.type == ParserNode.Type.Colon),
                 (lambda elem_3: elem_3.type.is_expression()),
@@ -1032,7 +1032,7 @@ class File:
         (
             "while_statement",
             [
-                (lambda elem_0: elem_0.type == ParserNode.Type.Statement and elem_0.value == "while"),
+                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "while"),
                 (lambda elem_1: elem_1.type.is_expression()),
                 (lambda elem_2: elem_2.type.is_expression()),
             ],
@@ -1170,7 +1170,7 @@ class File:
         for statement in self.statements:
             if self.slice(len(statement)) == statement:
                 self.position += len(statement)
-                return ParserNode(ParserNode.Type.Statement, statement)
+                return ParserNode(ParserNode.Type.StatementKeyword, statement)
 
     def is_type_assignment(self):
         ...
