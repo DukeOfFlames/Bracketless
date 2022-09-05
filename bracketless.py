@@ -83,11 +83,71 @@ def inverse_factorial(f):
     return inverse_factorial_approximation(f)
 
 
+def python_value_from_bracketless_value(bracketless_value):
+    if bracketless_value.type == InterpreterNode.Type.Integer:
+        return bracketless_value.value
+    if bracketless_value.type == InterpreterNode.Type.Float:
+        return bracketless_value.value
+    if bracketless_value.type == InterpreterNode.Type.Function:
+        bracketless_func = bracketless_value
+
+        def call(*python_params):
+            return python_value_from_bracketless_value(
+                ParserNode(
+                    ParserNode.Type.FunctionCallOrListIndexing,
+                    (
+                        ParserNode(
+                            ParserNode.Type.InternalInterpreterNode, bracketless_func
+                        ),
+                        [
+                            ParserNode(
+                                ParserNode.Type.InternalInterpreterNode,
+                                bracketless_value_from_python_value(python_param),
+                            )
+                            for python_param in python_params
+                        ],
+                    ),
+                ).interpret(None)
+            )
+
+        return call
+    if bracketless_value.type == InterpreterNode.Type.List:
+        bracketless_list = bracketless_value
+        return [
+            python_value_from_bracketless_value(elem) for elem in bracketless_list.value
+        ]
+    debug_print_repr(bracketless_value)
+    raise Exception
+
+
 def bracketless_value_from_python_value(python_value):
     if type(python_value) == int:
         return InterpreterNode(InterpreterNode.Type.Integer, python_value)
     if type(python_value) == float:
         return InterpreterNode(InterpreterNode.Type.Float, python_value)
+    if hasattr(python_value, "__call__"):
+        python_func = python_value
+
+        def call(current_scope, bracketless_params):
+            return bracketless_value_from_python_value(
+                python_func(
+                    *[
+                        python_value_from_bracketless_value(bracketless_param)
+                        for bracketless_param in bracketless_params
+                    ]
+                )
+            )
+
+        return InterpreterNode(
+            InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": call}
+        )
+    if hasattr(python_value, "__iter__"):
+        python_list = python_value
+        return InterpreterNode(
+            InterpreterNode.Type.List,
+            [bracketless_value_from_python_value(elem) for elem in python_list],
+        )
+    debug_print_repr(python_value)
     raise Exception
 
 

@@ -1,0 +1,10 @@
+START
+
+°inputs = {1, 2, 3, 4, 5, 6}
+
+#drucke{#for_each{inputs, fn {n} { -> n! }}}
+
+pylib builtins
+#drucke{{builtins.map}{fn {n} { -> n! }, inputs}}
+
+END
