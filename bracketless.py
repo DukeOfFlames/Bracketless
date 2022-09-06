@@ -511,11 +511,12 @@ class ParserNode:
             lhs = self.value[0].interpret(current_scope)
             op = self.value[1]
             rhs = self.value[2].interpret(current_scope)
-            if op in ["+", "-", "*"]:
+            if op in ["+", "-", "*", "^"]:
                 func = {
                     "+": (lambda x, y: x + y),
                     "-": (lambda x, y: x - y),
                     "*": (lambda x, y: x * y),
+                    "^": (lambda x, y: x**y),
                 }[op]
                 if (
                     lhs.type == InterpreterNode.Type.Integer
@@ -538,21 +539,6 @@ class ParserNode:
                     return InterpreterNode(
                         InterpreterNode.Type.Float,
                         lhs_as_float.value / rhs_as_float.value,
-                    )
-            if op == "^":
-                if (
-                    lhs.type == InterpreterNode.Type.Integer
-                    and rhs.type == InterpreterNode.Type.Integer
-                ):
-                    return InterpreterNode(
-                        InterpreterNode.Type.Integer, lhs.value**rhs.value
-                    )
-                lhs_as_float = lhs.convert_to_float()
-                rhs_as_float = rhs.convert_to_float()
-                if lhs_as_float != None and rhs_as_float != None:
-                    return InterpreterNode(
-                        InterpreterNode.Type.Float,
-                        lhs_as_float.value**rhs_as_float.value,
                     )
             if op == "%":
                 if (
