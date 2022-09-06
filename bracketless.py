@@ -227,6 +227,8 @@ class RichRepr:
             )
         if type(v) == TopScope:
             return RichRepr([("TopScope", 0)])
+        if type(v) == FunctionType:
+            return RichRepr([(str(v), 0)])
         raise Exception(f"Could not format value of type {type(v)}")
 
     def string(self):
@@ -253,7 +255,8 @@ print = None
 language_name = "Bracketless"
 
 
-class FunctionType:
+@enum.unique
+class FunctionType(enum.Enum):
     External = 0
     Internal = 1
 
