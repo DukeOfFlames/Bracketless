@@ -78,6 +78,8 @@ def python_value_from_bracketless_value(bracketless_value):
         return bracketless_value.value
     if bracketless_value.type == InterpreterNode.Type.Float:
         return bracketless_value.value
+    if bracketless_value.type == InterpreterNode.Type.Boolean:
+        return bracketless_value.value
     if bracketless_value.type == InterpreterNode.Type.Function:
         bracketless_func = bracketless_value
         def call(*python_params):
@@ -102,6 +104,8 @@ def bracketless_value_from_python_value(python_value):
         return InterpreterNode(InterpreterNode.Type.Integer, python_value)
     if type(python_value) == float:
         return InterpreterNode(InterpreterNode.Type.Float, python_value)
+    if type(python_value) == bool:
+        return InterpreterNode(InterpreterNode.Type.Boolean, python_value)
     if hasattr(python_value, "__call__"):
         python_func = python_value
         def call(current_scope, bracketless_params):
