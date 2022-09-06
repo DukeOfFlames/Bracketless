@@ -1,0 +1,8 @@
+START
+pylib builtins
+pylib functools
+°list = {-3, -2, -1, 1, 2, 3}
+#drucke{{builtins.map}{fn {n} { -> n^2 }, list}}
+#drucke{{builtins.filter}{fn {n} { -> n > 0 }, list}}
+#drucke{{functools.reduce}{fn {n, m} { -> n * m }, list}}
+END
