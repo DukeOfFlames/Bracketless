@@ -422,6 +422,7 @@ class ParserNode:
             lhs = self.value[0].interpret(current_scope)
             op = self.value[1]
             rhs = self.value[2].interpret(current_scope)
+            # Numerical operators that allow both integers and floats
             if op in ['+', '-', '*', '^']:
                 func = {'+': (lambda x, y: x + y), '-': (lambda x, y: x - y), '*': (lambda x, y: x * y), '^': (lambda x, y: x ** y)}[op]
                 if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
@@ -430,17 +431,25 @@ class ParserNode:
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
                     return InterpreterNode(InterpreterNode.Type.Float, func(lhs_as_float.value, rhs_as_float.value))
+            # Numerical operators that allow only floats
             if op == '/':
                 lhs_as_float = lhs.convert_to_float()
                 rhs_as_float = rhs.convert_to_float()
                 if lhs_as_float != None and rhs_as_float != None:
                     return InterpreterNode(InterpreterNode.Type.Float, lhs_as_float.value / rhs_as_float.value)
+            # Numerical operators that allow only integers
             if op == '%':
                 if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
                     return InterpreterNode(InterpreterNode.Type.Integer, lhs.value % rhs.value)
-            if op == "==":
+            # Numerical operators that return a boolean and allow both integers and floats
+            if op in ['==', '>']:
+                func = {'==': (lambda x, y: x == y), '>': (lambda x, y: x > y)}[op]
                 if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
-                    return InterpreterNode(InterpreterNode.Type.Boolean, lhs.value == rhs.value)
+                    return InterpreterNode(InterpreterNode.Type.Boolean, func(lhs.value, rhs.value))
+                lhs_as_float = lhs.convert_to_float()
+                rhs_as_float = rhs.convert_to_float()
+                if lhs_as_float != None and rhs_as_float != None:
+                    return InterpreterNode(InterpreterNode.Type.Boolean, func(lhs_as_float.value, rhs_as_float.value))
             if op == '.':
                 if lhs.type == InterpreterNode.Type.Function and rhs.type == InterpreterNode.Type.Function:
                     def combined_func(current_scope, params):
