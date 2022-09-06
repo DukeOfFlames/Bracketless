@@ -144,6 +144,8 @@ class RichRepr:
             return RichRepr([("Scope:", 0)]) + (RichRepr([("Variables:", 0)]) + RichRepr.from_any([name for name, value in v.vars.items()]).indent()).indent() + (RichRepr([("Parent Scope:", 0)]) + RichRepr.from_any(v.parent_scope).indent()).indent()
         if type(v) == TopScope:
             return RichRepr([("TopScope", 0)])
+        if type(v) == FunctionType:
+            return RichRepr([(str(v), 0)])
         raise Exception(f"Could not format value of type {type(v)}")
 
     def string(self):
@@ -171,7 +173,8 @@ print = None
 language_name = 'Bracketless'
 
 
-class FunctionType:
+@enum.unique
+class FunctionType(enum.Enum):
     External = 0
     Internal = 1
 
