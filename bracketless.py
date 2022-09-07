@@ -118,7 +118,7 @@ def python_value_from_bracketless_value(bracketless_value):
         return [
             python_value_from_bracketless_value(elem) for elem in bracketless_list.value
         ]
-    debug_print_repr(bracketless_value)
+    debug_print(rich_repr(bracketless_value))
     raise Exception
 
 
@@ -151,7 +151,7 @@ def bracketless_value_from_python_value(python_value):
             InterpreterNode.Type.List,
             [bracketless_value_from_python_value(elem) for elem in python_list],
         )
-    debug_print_repr(python_value)
+    debug_print(rich_repr(python_value))
     raise Exception
 
 
@@ -241,8 +241,8 @@ class RichRepr:
         )
 
 
-def debug_print_repr(v):
-    debug_print(RichRepr.from_any(v).string())
+def rich_repr(v):
+    return RichRepr.from_any(v).string()
 
 
 def debug_print(s):
@@ -389,7 +389,7 @@ class ParserNode:
 
     def interpret(self, current_scope):
 
-        # debug_print_repr(current_scope)
+        # debug_print(rich_repr(current_scope))
 
         if self.type == ParserNode.Type.Block:
             if len(self.value) != 1:
@@ -398,7 +398,7 @@ class ParserNode:
                 for thing in self.value:
                     thing.interpret(block_scope)
                 debug_print("Environment at end of block:")
-                debug_print_repr(block_scope)
+                debug_print(rich_repr(block_scope))
                 return None
             else:
                 return self.value[0].interpret(current_scope)
@@ -456,8 +456,8 @@ class ParserNode:
                     return func_body(current_scope, func_param_values)
                 else:
                     raise Exception
-            debug_print_repr(func_or_list_expr)
-            debug_print_repr(func_or_list)
+            debug_print(rich_repr(func_or_list_expr))
+            debug_print(rich_repr(func_or_list))
             debug_print(type(func_or_list))
             raise Exception(
                 f"Cannot interpret FunctionCallOrListIndexing because {func_or_list} is neither a function nor a list"
@@ -484,7 +484,7 @@ class ParserNode:
             if op == "not":
                 if v.type == InterpreterNode.Type.Boolean:
                     return InterpreterNode(InterpreterNode.Type.Boolean, not v.value)
-            debug_print_repr(self.value)
+            debug_print(rich_repr(self.value))
             raise Exception(f"Could not interpret PrefixOperation")
 
         if self.type == ParserNode.Type.PostfixOperation:
@@ -612,9 +612,9 @@ class ParserNode:
                         InterpreterNode.Type.Function,
                         {"type": FunctionType.Internal, "body": combined_func},
                     )
-            debug_print_repr(lhs)
-            debug_print_repr(op)
-            debug_print_repr(rhs)
+            debug_print(rich_repr(lhs))
+            debug_print(rich_repr(op))
+            debug_print(rich_repr(rhs))
             raise Exception(f"Could not interpret InfixOperation")
 
         if self.type == ParserNode.Type.IfStatement:
@@ -1995,7 +1995,7 @@ def main(filename):
     file = File(contents)
     root_node = file.parse()
     debug_print("Root ParserNode:")
-    debug_print_repr(root_node)
+    debug_print(rich_repr(root_node))
     debug_print("")
     debug_print("Interpreting...")
     root_node.interpret(TopScope())
