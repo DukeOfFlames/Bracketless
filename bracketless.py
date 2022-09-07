@@ -752,20 +752,19 @@ class InterpreterNode:
     def representation(self):
         if self.type == InterpreterNode.Type.Integer:
             return str(self.value)
-        elif self.type == InterpreterNode.Type.Float:
+        if self.type == InterpreterNode.Type.Float:
             return str(self.value)
-        elif self.type == InterpreterNode.Type.String:
+        if self.type == InterpreterNode.Type.String:
             return '"' + repr(self.value)[1:-1] + '"'
-        elif self.type == InterpreterNode.Type.Hexadecimal:
+        if self.type == InterpreterNode.Type.Hexadecimal:
             return self.value
-        elif self.type == InterpreterNode.Type.Binary:
+        if self.type == InterpreterNode.Type.Binary:
             return self.value
-        elif self.type == InterpreterNode.Type.List:
+        if self.type == InterpreterNode.Type.List:
             return "{" + ", ".join([node.representation() for node in self.value]) + "}"
-        elif self.type == InterpreterNode.Type.Boolean:
+        if self.type == InterpreterNode.Type.Boolean:
             return "True" if self.value else "False"
-        else:
-            raise Exception
+        raise Exception
 
     def convert_to_float(self):
         if self.type == InterpreterNode.Type.Float:
