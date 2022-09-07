@@ -529,25 +529,14 @@ class ParserNode:
             return Builtins.builtins[name]
 
         if self.type == ParserNode.Type.Function:
-            if self.value["type"] == FunctionType.Internal:
-                interpreted_self = InterpreterNode(
-                    InterpreterNode.Type.Function, {
-                        "type": FunctionType.Internal,
-                        "body": self.value["body"],
-                        "parent_scope": current_scope
-                    }
-                )
-            elif self.value["type"] == FunctionType.External:
-                interpreted_self = InterpreterNode(
-                    InterpreterNode.Type.Function, {
-                        "type": FunctionType.External,
-                        "param_names": self.value["param_names"],
-                        "body": self.value["body"],
-                        "parent_scope": current_scope
-                    }
-                )
-            else:
-                raise Exception
+            interpreted_self = InterpreterNode(
+                InterpreterNode.Type.Function, {
+                    "type": FunctionType.External,
+                    "param_names": self.value["param_names"],
+                    "body": self.value["body"],
+                    "parent_scope": current_scope
+                }
+            )
             if "name" in self.value.keys():
                 current_scope.define_variable(self.value["name"], interpreted_self)
             return interpreted_self
@@ -1587,7 +1576,6 @@ class File:
 
     def parse_function(self):
         res = dict()
-        res["type"] = FunctionType.External
         self.parse_function_keyword()
         self.skip_useless()
         if self.is_function_name():
