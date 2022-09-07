@@ -125,6 +125,9 @@ class RichRepr:
     def concatenate(lst):
         return RichRepr([(line, indentation) for rich_repr in lst for (line, indentation) in rich_repr.lst])
 
+    def from_str(s):
+        return RichRepr([(s, 0)])
+
     def __add__(self, other):
         return RichRepr(self.lst + other.lst)
 
@@ -133,23 +136,23 @@ class RichRepr:
 
     def from_any(v):
         if type(v) in [str, int, bool, float]:
-            return RichRepr([(repr(v), 0)])
+            return RichRepr.from_str(repr(v))
         if type(v) == list:
-            return RichRepr([("[", 0)]) + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr([("]", 0)])
+            return RichRepr.from_str("[") + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr.from_str("]")
         if type(v) == tuple:
-            return RichRepr([("(", 0)]) + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr([(")", 0)])
+            return RichRepr.from_str("(") + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr.from_str(")")
         if type(v) == dict:
-            return RichRepr([("{", 0)]) + RichRepr.concatenate([RichRepr([(f"{key}:", 0)]) + RichRepr.from_any(value).indent() for key, value in v.items()]).indent() + RichRepr([("}", 0)])
+            return RichRepr.from_str("{") + RichRepr.concatenate([RichRepr.from_str(f"{key}:") + RichRepr.from_any(value).indent() for key, value in v.items()]).indent() + RichRepr.from_str("}")
         if type(v) in [ParserNode.Type, InterpreterNode.Type]:
-            return RichRepr([({ParserNode.Type: "ParserNode", InterpreterNode.Type: "InterpreterNode"}[type(v)] + f".{v.name}", 0)])
+            return RichRepr.from_str({ParserNode.Type: "ParserNode", InterpreterNode.Type: "InterpreterNode"}[type(v)] + f".{v.name}")
         if type(v) in [ParserNode, InterpreterNode]:
             return RichRepr.from_any(v.type) + RichRepr.from_any(v.value).indent()
         if type(v) == Scope:
-            return RichRepr([("Scope:", 0)]) + (RichRepr([("Variables:", 0)]) + RichRepr.from_any([name for name, value in v.vars.items()]).indent()).indent() + (RichRepr([("Parent Scope:", 0)]) + RichRepr.from_any(v.parent_scope).indent()).indent()
+            return RichRepr.from_str("Scope:") + (RichRepr.from_str("Variables:") + RichRepr.from_any([name for name, value in v.vars.items()]).indent()).indent() + (RichRepr.from_str("Parent Scope:") + RichRepr.from_any(v.parent_scope).indent()).indent()
         if type(v) == TopScope:
-            return RichRepr([("TopScope", 0)])
+            return RichRepr.from_str("TopScope")
         if type(v) == FunctionType:
-            return RichRepr([(str(v), 0)])
+            return RichRepr.from_str(str(v))
         raise Exception(f"Could not format value of type {type(v)}")
 
     def string(self):
