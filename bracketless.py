@@ -29,6 +29,7 @@ import string
 import sys
 import math
 import enum
+import dis
 
 
 def flatten_list(lst):
@@ -153,6 +154,15 @@ class RichRepr:
             return RichRepr.from_str("TopScope")
         if type(v) == FunctionType:
             return RichRepr.from_str(str(v))
+        if hasattr(v, "__call__"):
+            res = RichRepr.from_str("Python Function:")
+            res += (RichRepr.from_str("Name:") + RichRepr.from_str(v.__name__).indent()).indent()
+            if hasattr(v, "__code__"):
+                res += (RichRepr.from_str("Captured Variables:") + RichRepr.from_any({name: value for name, value in zip(v.__code__.co_freevars, [cell.cell_contents for cell in v.__closure__])}).indent()).indent()
+                res += (RichRepr.from_str("Code:") + RichRepr.concatenate([RichRepr.from_str(inst.opname) for inst in dis.get_instructions(v)]).indent()).indent()
+            else:
+                res += (RichRepr.from_str("Code:") + RichRepr.from_str("<builtin>").indent()).indent()
+            return res
         raise Exception(f"Could not format value of type {type(v)}")
 
     def string(self):
@@ -603,6 +613,8 @@ class InterpreterNode:
             return "{" + ", ".join([node.representation() for node in self.value]) + "}"
         if self.type == InterpreterNode.Type.Boolean:
             return "True" if self.value else "False"
+        if self.type == InterpreterNode.Type.Function:
+            return rich_repr(self)
         raise Exception
 
     def convert_to_float(self):
