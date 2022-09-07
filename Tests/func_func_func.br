@@ -1,0 +1,6 @@
+START
+pylib functools
+pylib math
+°combined_func = {functools.reduce}{fn {f, g} { -> f . g }, {math.gamma, math.sqrt, math.log2}}
+#drucke{combined_func{562949953421312}}
+END
