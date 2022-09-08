@@ -1,0 +1,68 @@
+START
+
+cl CB64{
+    fn init{number: int}{
+        pylib string
+
+        own.number = number
+        own.positional_chars = string.digits + string.ascii_letters + '+='
+    }
+
+    fn encode{num = none}{
+        if num == None:
+            num = own.number
+
+        number = {}
+
+        calc = #int{num / 64}
+        diff = num - calc * 64
+        calc2 = calc
+
+        number.append{diff}
+
+        while calc2 > 63 {
+            calc2 = #int{calc / 64}
+            diff = calc - calc2 * 64
+            calc = calc2
+
+            number.append{diff}
+        }
+
+        number.append{calc}
+
+        res = ""
+
+        for final : number{;;-1}{
+            res += own.positional_chars{final}
+        }
+
+        if res.startswith{"0"}{
+            res = res{1;}
+        }
+
+        -> res
+
+    }  § none type implementieren
+
+    fn decode{num = none}{
+        if num == none{
+            num = own.number
+        }
+
+        cb64_number = #list{num}
+        number = 0
+        final = {}
+
+        for cb : cb64_number{;;-1} {
+            final.append{cb}
+        }
+
+        for cb : #range{#count{final}}{
+            number += own.positional_chars.find{final{cb}} * 64 ^ cb
+        }
+
+        -> number
+    }
+}
+
+END

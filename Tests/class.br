@@ -1,6 +1,6 @@
 START
 
-x = 12
+°x = 12
 
 cl Example{
     fn init{value}{
@@ -20,3 +20,4 @@ cl Example{
 #drucke{Example{x}}
 
 END
+
