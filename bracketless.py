@@ -1532,6 +1532,7 @@ class File:
         self.skip_useless()
         for (is_x, parse_x) in [
             (self.is_start, self.parse_start),
+            (self.is_class, self.parse_class),
             (self.is_function, self.parse_function),
             (self.is_end, self.parse_end),
             (self.is_string, self.parse_string),
@@ -1918,14 +1919,17 @@ class File:
         name = self.parse_class_name()
         self.skip_useless()
         functions = []
+        own = []
         self.parse_opening_curly()
+        self.skip_useless()
         while not self.is_closing_curly():
-            self.parse_function()
+            functions.append(self.parse_function())
         self.parse_closing_curly()
         self.skip_useless()
 
         return ParserNode(
-            ParserNode.Type.Class, {"name": name, "function_names": functions}
+            ParserNode.Type.Class,
+            {"name": name, "function_names": functions, "own": own},
         )
 
     def is_function(self):
