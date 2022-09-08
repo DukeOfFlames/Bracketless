@@ -1629,7 +1629,7 @@ class File:
     def is_number(self):
         if self.get() == "." and self.content[self.position + 1] in string.digits:
             return True
-        elif self.get() in string.digits or self.slice(3) in ["inf", "NaN"]:
+        elif self.get() in string.digits + "π" or self.slice(3) in ["inf", "NaN"]:
             return True
 
     def parse_number(self):
@@ -1644,6 +1644,10 @@ class File:
             return ParserNode(
                 ParserNode.Type.Float, self.content[self.position - 3 : self.position]
             )
+
+        if self.get() == "π":
+            self.position += 1
+            return ParserNode(ParserNode.Type.Float, math.pi)
 
         while self.get() in string.digits + "." and not exponential == 1:
             if points == 0:

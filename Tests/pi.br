@@ -1,4 +1,3 @@
 START
-pylib math
-#drucke{math.pi}
+#drucke{π}
 END
