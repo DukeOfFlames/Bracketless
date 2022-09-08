@@ -83,15 +83,19 @@ def python_value_from_bracketless_value(bracketless_value):
         return bracketless_value.value
     if bracketless_value.type == InterpreterNode.Type.Function:
         bracketless_func = bracketless_value
+
         def call(*python_params):
             return python_value_from_bracketless_value(
                 ParserNode(
                     ParserNode.Type.FunctionCallOrListIndexing, (
                         ParserNode(ParserNode.Type.InternalInterpreterNode, bracketless_func),
-                        [ParserNode(ParserNode.Type.InternalInterpreterNode, bracketless_value_from_python_value(python_param)) for python_param in python_params]
+                        [ParserNode(ParserNode.Type.InternalInterpreterNode,
+                                    bracketless_value_from_python_value(python_param)) for python_param in
+                         python_params]
                     )
                 ).interpret(None)
             )
+
         return call
     if bracketless_value.type == InterpreterNode.Type.List:
         bracketless_list = bracketless_value
@@ -109,12 +113,16 @@ def bracketless_value_from_python_value(python_value):
         return InterpreterNode(InterpreterNode.Type.Boolean, python_value)
     if hasattr(python_value, "__call__"):
         python_func = python_value
+
         def call(current_scope, bracketless_params):
-            return bracketless_value_from_python_value(python_func(*[python_value_from_bracketless_value(bracketless_param) for bracketless_param in bracketless_params]))
+            return bracketless_value_from_python_value(python_func(
+                *[python_value_from_bracketless_value(bracketless_param) for bracketless_param in bracketless_params]))
+
         return InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": call})
     if hasattr(python_value, "__iter__"):
         python_list = python_value
-        return InterpreterNode(InterpreterNode.Type.List, [bracketless_value_from_python_value(elem) for elem in python_list])
+        return InterpreterNode(InterpreterNode.Type.List,
+                               [bracketless_value_from_python_value(elem) for elem in python_list])
     debug_print(rich_repr(python_value))
     raise Exception
 
@@ -139,17 +147,24 @@ class RichRepr:
         if type(v) in [str, int, bool, float]:
             return RichRepr.from_str(repr(v))
         if type(v) == list:
-            return RichRepr.from_str("[") + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr.from_str("]")
+            return RichRepr.from_str("[") + RichRepr.concatenate(
+                [RichRepr.from_any(elem) for elem in v]).indent() + RichRepr.from_str("]")
         if type(v) == tuple:
-            return RichRepr.from_str("(") + RichRepr.concatenate([RichRepr.from_any(elem) for elem in v]).indent() + RichRepr.from_str(")")
+            return RichRepr.from_str("(") + RichRepr.concatenate(
+                [RichRepr.from_any(elem) for elem in v]).indent() + RichRepr.from_str(")")
         if type(v) == dict:
-            return RichRepr.from_str("{") + RichRepr.concatenate([RichRepr.from_str(f"{key}:") + RichRepr.from_any(value).indent() for key, value in v.items()]).indent() + RichRepr.from_str("}")
+            return RichRepr.from_str("{") + RichRepr.concatenate(
+                [RichRepr.from_str(f"{key}:") + RichRepr.from_any(value).indent() for key, value in
+                 v.items()]).indent() + RichRepr.from_str("}")
         if type(v) in [ParserNode.Type, InterpreterNode.Type]:
-            return RichRepr.from_str({ParserNode.Type: "ParserNode", InterpreterNode.Type: "InterpreterNode"}[type(v)] + f".{v.name}")
+            return RichRepr.from_str(
+                {ParserNode.Type: "ParserNode", InterpreterNode.Type: "InterpreterNode"}[type(v)] + f".{v.name}")
         if type(v) in [ParserNode, InterpreterNode]:
             return RichRepr.from_any(v.type) + RichRepr.from_any(v.value).indent()
         if type(v) == Scope:
-            return RichRepr.from_str("Scope:") + (RichRepr.from_str("Variables:") + RichRepr.from_any([name for name, value in v.vars.items()]).indent()).indent() + (RichRepr.from_str("Parent Scope:") + RichRepr.from_any(v.parent_scope).indent()).indent()
+            return RichRepr.from_str("Scope:") + (RichRepr.from_str("Variables:") + RichRepr.from_any(
+                [name for name, value in v.vars.items()]).indent()).indent() + (
+                               RichRepr.from_str("Parent Scope:") + RichRepr.from_any(v.parent_scope).indent()).indent()
         if type(v) == TopScope:
             return RichRepr.from_str("TopScope")
         if type(v) == FunctionType:
@@ -158,8 +173,13 @@ class RichRepr:
             res = RichRepr.from_str("Python Function:")
             res += (RichRepr.from_str("Name:") + RichRepr.from_str(v.__name__).indent()).indent()
             if hasattr(v, "__code__"):
-                res += (RichRepr.from_str("Captured Variables:") + RichRepr.from_any({name: value for name, value in zip(v.__code__.co_freevars, [cell.cell_contents for cell in v.__closure__])}).indent()).indent()
-                res += (RichRepr.from_str("Code:") + RichRepr.concatenate([RichRepr.from_str(inst.opname) for inst in dis.get_instructions(v)]).indent()).indent()
+                res += (RichRepr.from_str("Captured Variables:") + RichRepr.from_any({name: value for name, value in
+                                                                                      zip(v.__code__.co_freevars,
+                                                                                          [cell.cell_contents for cell
+                                                                                           in
+                                                                                           v.__closure__])}).indent()).indent()
+                res += (RichRepr.from_str("Code:") + RichRepr.concatenate(
+                    [RichRepr.from_str(inst.opname) for inst in dis.get_instructions(v)]).indent()).indent()
             else:
                 res += (RichRepr.from_str("Code:") + RichRepr.from_str("<builtin>").indent()).indent()
             return res
@@ -371,7 +391,7 @@ class ParserNode:
                         raise Exception
                     for i in range(len(func_param_names)):
                         func_scope.define_variable(func_param_names[i],
-                                                              func_param_values[i])
+                                                   func_param_values[i])
                     try:
                         func_body.interpret(func_scope)
                     except Return as r:
@@ -387,7 +407,8 @@ class ParserNode:
             debug_print(rich_repr(func_or_list_expr))
             debug_print(rich_repr(func_or_list))
             debug_print(type(func_or_list))
-            raise Exception(f"Cannot interpret FunctionCallOrListIndexing because {func_or_list} is neither a function nor a list")
+            raise Exception(
+                f"Cannot interpret FunctionCallOrListIndexing because {func_or_list} is neither a function nor a list")
 
         if self.type == ParserNode.Type.Class:
             class_name = self.value[0]
@@ -440,8 +461,9 @@ class ParserNode:
             op = self.value[1]
             rhs = self.value[2].interpret(current_scope)
             # Numerical operators that allow both integers and floats
-            if op in ['+', '-', '*', '^']:
-                func = {'+': (lambda x, y: x + y), '-': (lambda x, y: x - y), '*': (lambda x, y: x * y), '^': (lambda x, y: x ** y)}[op]
+            if op in ['+', '-', '*', '^', '//']:
+                func = {'+': (lambda x, y: x + y), '-': (lambda x, y: x - y), '*': (lambda x, y: x * y),
+                        '^': (lambda x, y: x ** y), '//': (lambda x, y: x ** (1 / y))}[op]
                 if lhs.type == InterpreterNode.Type.Integer and rhs.type == InterpreterNode.Type.Integer:
                     return InterpreterNode(InterpreterNode.Type.Integer, func(lhs.value, rhs.value))
                 lhs_as_float = lhs.convert_to_float()
@@ -474,9 +496,14 @@ class ParserNode:
                             raise Exception
                         param = params[0]
                         return ParserNode(ParserNode.Type.FunctionCallOrListIndexing,
-                                    (ParserNode(ParserNode.Type.InternalInterpreterNode, lhs), [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (ParserNode(ParserNode.Type.InternalInterpreterNode, rhs), [ParserNode(ParserNode.Type.InternalInterpreterNode, param)]))])).interpret(None)
+                                          (ParserNode(ParserNode.Type.InternalInterpreterNode, lhs), [
+                                              ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (
+                                              ParserNode(ParserNode.Type.InternalInterpreterNode, rhs), [
+                                                  ParserNode(ParserNode.Type.InternalInterpreterNode,
+                                                             param)]))])).interpret(None)
 
-                    return InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": combined_func})
+                    return InterpreterNode(InterpreterNode.Type.Function,
+                                           {"type": FunctionType.Internal, "body": combined_func})
             debug_print(rich_repr(lhs))
             debug_print(rich_repr(op))
             debug_print(rich_repr(rhs))
@@ -751,9 +778,11 @@ class Builtins:
         if end.type != InterpreterNode.Type.Integer:
             raise Exception
         end = end.value
-        return InterpreterNode(InterpreterNode.Type.List, [InterpreterNode(InterpreterNode.Type.Integer, i) for i in range(end)])
+        return InterpreterNode(InterpreterNode.Type.List,
+                               [InterpreterNode(InterpreterNode.Type.Integer, i) for i in range(end)])
 
-    builtins["range"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_range})
+    builtins["range"] = InterpreterNode(InterpreterNode.Type.Function,
+                                        {"type": FunctionType.Internal, "body": builtin_range})
 
     def for_each(current_scope, params):
         if len(params) != 2:
@@ -763,9 +792,12 @@ class Builtins:
             raise Exception
         if func.type != InterpreterNode.Type.Function:
             raise Exception
-        return InterpreterNode(InterpreterNode.Type.List, [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (ParserNode(ParserNode.Type.InternalInterpreterNode, func), [ParserNode(ParserNode.Type.InternalInterpreterNode, elem)])).interpret(None) for elem in lst.value])
+        return InterpreterNode(InterpreterNode.Type.List, [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (
+        ParserNode(ParserNode.Type.InternalInterpreterNode, func),
+        [ParserNode(ParserNode.Type.InternalInterpreterNode, elem)])).interpret(None) for elem in lst.value])
 
-    builtins["for_each"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": for_each})
+    builtins["for_each"] = InterpreterNode(InterpreterNode.Type.Function,
+                                           {"type": FunctionType.Internal, "body": for_each})
 
     def builtin_all(current_scope, params):
         if len(params) != 1:
@@ -779,7 +811,8 @@ class Builtins:
                 raise Exception
         return InterpreterNode(InterpreterNode.Type.Boolean, all([elem.value for elem in lst]))
 
-    builtins["all"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_all})
+    builtins["all"] = InterpreterNode(InterpreterNode.Type.Function,
+                                      {"type": FunctionType.Internal, "body": builtin_all})
 
     def builtin_round(current_scope, params):
         if len(params) == 1:
@@ -792,7 +825,9 @@ class Builtins:
         else:
             raise Exception
 
-    builtins["round"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_round})
+    builtins["round"] = InterpreterNode(InterpreterNode.Type.Function,
+                                        {"type": FunctionType.Internal, "body": builtin_round})
+
 
 class Error(Exception):  # TODO: Implement in own language
     def __init__(self, error_name, details):
@@ -928,11 +963,14 @@ class File:
             "conditional_expression",
             [
                 (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword),
-                (lambda elem_1: elem_1.type in [ParserNode.Type.Identifier, ParserNode.Type.String, ParserNode.Type.Integer, ParserNode.Type.List,
+                (lambda elem_1: elem_1.type in [ParserNode.Type.Identifier, ParserNode.Type.String,
+                                                ParserNode.Type.Integer, ParserNode.Type.List,
                                                 ParserNode.Type.Function]),
-                (lambda elem_2: elem_2.type == ParserNode.Type.InfixOperator and not elem_2.value in ['==', '<', '>', '>=',
-                                                                                               '<=', '%']),
-                (lambda elem_3: elem_3.type in [ParserNode.Type.Identifier, ParserNode.Type.String, ParserNode.Type.Integer, ParserNode.Type.List,
+                (lambda elem_2: elem_2.type == ParserNode.Type.InfixOperator and not elem_2.value in ['==', '<', '>',
+                                                                                                      '>=',
+                                                                                                      '<=', '%']),
+                (lambda elem_3: elem_3.type in [ParserNode.Type.Identifier, ParserNode.Type.String,
+                                                ParserNode.Type.Integer, ParserNode.Type.List,
                                                 ParserNode.Type.Function]),
             ],
             (lambda arr: ParserNode(ParserNode.Type.ConditionalExpression, (arr[0].value, arr[1].value, arr[2].value))),
@@ -1279,7 +1317,7 @@ class File:
     def is_number(self):
         if self.get() == '.' and self.content[self.position + 1] in string.digits:
             return True
-        elif self.get()in string.digits + 'π' or self.slice(3) in ['inf', 'NaN']:
+        elif self.get() in string.digits + 'π' or self.slice(3) in ['inf', 'NaN']:
             return True
 
     def parse_number(self):
