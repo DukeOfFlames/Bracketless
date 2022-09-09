@@ -335,17 +335,17 @@ class ParserNode:
     def is_prefix_operator(self):
         if self.type != ParserNode.Type.Operator:
             return False
-        return OperatorType.Prefix in self.value["types"]
+        return self.value in Syntax.operators[OperatorType.Prefix]
 
     def is_infix_operator(self):
         if self.type != ParserNode.Type.Operator:
             return False
-        return OperatorType.Infix in self.value["types"]
+        return self.value in Syntax.operators[OperatorType.Infix]
 
     def is_postfix_operator(self):
         if self.type != ParserNode.Type.Operator:
             return False
-        return OperatorType.Postfix in self.value["types"]
+        return self.value in Syntax.operators[OperatorType.Postfix]
 
     def interpret(self, current_scope):
 
@@ -975,7 +975,7 @@ class File:
             "assignment",
             [
                 (lambda elem_0: elem_0.type == ParserNode.Type.Identifier),
-                (lambda elem_1: elem_1.is_infix_operator() and elem_1.value["op"] == '='),
+                (lambda elem_1: elem_1.is_infix_operator() and elem_1.value == '='),
                 (lambda elem_2: elem_2.type.is_expression()),
             ],
             (lambda arr: ParserNode(ParserNode.Type.Assignment, (arr[0].value, arr[2]))),
@@ -987,22 +987,22 @@ class File:
                 (lambda elem_1: elem_1.type in [ParserNode.Type.Identifier, ParserNode.Type.String,
                                                 ParserNode.Type.Integer, ParserNode.Type.List,
                                                 ParserNode.Type.Function]),
-                (lambda elem_2: elem_2.is_infix_operator() and not elem_2.value["op"] in ['==', '<', '>',
+                (lambda elem_2: elem_2.is_infix_operator() and not elem_2.value in ['==', '<', '>',
                                                                                                       '>=',
                                                                                                       '<=', '%']),
                 (lambda elem_3: elem_3.type in [ParserNode.Type.Identifier, ParserNode.Type.String,
                                                 ParserNode.Type.Integer, ParserNode.Type.List,
                                                 ParserNode.Type.Function]),
             ],
-            (lambda arr: ParserNode(ParserNode.Type.ConditionalExpression, (arr[0].value, arr[1].value, arr[2].value["op"]))),
+            (lambda arr: ParserNode(ParserNode.Type.ConditionalExpression, (arr[0].value, arr[1].value, arr[2].value))),
         ),
         (
             "prefix_operation",
             [
-                (lambda elem_0: elem_0.is_prefix_operator() and elem_0.value["op"] != '°'),
+                (lambda elem_0: elem_0.is_prefix_operator() and elem_0.value != '°'),
                 (lambda elem_1: elem_1.type.is_expression()),
             ],
-            (lambda arr: ParserNode(ParserNode.Type.PrefixOperation, (arr[0].value["op"], arr[1]))),
+            (lambda arr: ParserNode(ParserNode.Type.PrefixOperation, (arr[0].value, arr[1]))),
         ),
         (
             "postfix_operation",
@@ -1010,21 +1010,21 @@ class File:
                 (lambda elem_0: elem_0.type.is_expression()),
                 (lambda elem_1: elem_1.is_postfix_operator()),
             ],
-            (lambda arr: ParserNode(ParserNode.Type.PostfixOperation, (arr[0], arr[1].value["op"]))),
+            (lambda arr: ParserNode(ParserNode.Type.PostfixOperation, (arr[0], arr[1].value))),
         ),
         (
             "infix_operation",
             [
                 (lambda elem_0: elem_0.type.is_expression()),
-                (lambda elem_1: elem_1.is_infix_operator() and elem_1.value["op"] != '='),
+                (lambda elem_1: elem_1.is_infix_operator() and elem_1.value != '='),
                 (lambda elem_2: elem_2.type.is_expression()),
             ],
-            (lambda arr: ParserNode(ParserNode.Type.InfixOperation, (arr[0], arr[1].value["op"], arr[2]))),
+            (lambda arr: ParserNode(ParserNode.Type.InfixOperation, (arr[0], arr[1].value, arr[2]))),
         ),
         (
             "declaration_assignment",
             [
-                (lambda elem_0: elem_0.is_prefix_operator() and elem_0.value["op"] == '°'),
+                (lambda elem_0: elem_0.is_prefix_operator() and elem_0.value == '°'),
                 (lambda elem_1: elem_1.type == ParserNode.Type.Assignment),
             ],
             (lambda arr: ParserNode(ParserNode.Type.DeclarationAssignment, arr[1].value)),
@@ -1213,7 +1213,7 @@ class File:
             if self.slice(len(op)) == op:
                 self.position += len(op)
                 types = list(filter(lambda typ: op in Syntax.operators[typ], Syntax.operators.keys()))
-                return ParserNode(ParserNode.Type.Operator, {"op": op, "types": types})
+                return ParserNode(ParserNode.Type.Operator, op)
 
     def is_statement(self):
         for statement in Syntax.statements:
