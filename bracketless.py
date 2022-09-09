@@ -1064,20 +1064,23 @@ class OperatorType(enum.Enum):
     Postfix = 2
 
 
+class Syntax:
+    operators = {
+        OperatorType.Prefix: ["->", "°", "not", "-"],
+        OperatorType.Infix: ["^", ">", "<", "*", "/", "=", "+", "-", ".", "%"]
+        + ["//", "%=", "+=", "==", "-=", "*=", "^=", "==", "/=", ">=", "<=", "or"]
+        + ["//=", "and"],
+        OperatorType.Postfix: ["!", "?"],
+    }
+    statements = ["if", "elif", "else", "while", "for"]
+
+
 class File:
     def __init__(self, content):
         self.content = content
         self.position = 0
         self.line_counter = 0
         self.column_counter = 0
-        self.operators = {
-            OperatorType.Prefix: ["->", "°", "not", "-"],
-            OperatorType.Infix: ["^", ">", "<", "*", "/", "=", "+", "-", ".", "%"]
-            + ["//", "%=", "+=", "==", "-=", "*=", "^=", "==", "/=", ">=", "<=", "or"]
-            + ["//=", "and"],
-            OperatorType.Postfix: ["!", "?"],
-        }
-        self.statements = ["if", "elif", "else", "while", "for"]
 
         self.separators = ";:."
         self.pos1 = 0  # for saving positions
@@ -1501,25 +1504,32 @@ class File:
 
     def is_operator(self):
         return any(
-            [self.slice(len(op)) == op for op in flatten_list(self.operators.values())]
+            [
+                self.slice(len(op)) == op
+                for op in flatten_list(Syntax.operators.values())
+            ]
         )
 
     def parse_operator(self):
-        for op in sorted(flatten_list(self.operators.values()), key=len, reverse=True):
+        for op in sorted(
+            flatten_list(Syntax.operators.values()), key=len, reverse=True
+        ):
             if self.slice(len(op)) == op:
                 self.position += len(op)
                 types = list(
-                    filter(lambda typ: op in self.operators[typ], self.operators.keys())
+                    filter(
+                        lambda typ: op in Syntax.operators[typ], Syntax.operators.keys()
+                    )
                 )
                 return ParserNode(ParserNode.Type.Operator, {"op": op, "types": types})
 
     def is_statement(self):
-        for statement in self.statements:
+        for statement in Syntax.statements:
             if self.slice(len(statement)) == statement:
                 return True
 
     def parse_statement(self):
-        for statement in self.statements:
+        for statement in Syntax.statements:
             if self.slice(len(statement)) == statement:
                 self.position += len(statement)
                 return ParserNode(ParserNode.Type.StatementKeyword, statement)
