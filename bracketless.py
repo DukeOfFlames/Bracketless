@@ -1070,11 +1070,6 @@ class File:
         self.position = 0
         self.line_counter = 0
         self.column_counter = 0
-        self.operator_types = [
-            OperatorType.Prefix,
-            OperatorType.Infix,
-            OperatorType.Postfix,
-        ]
         self.operators = {
             OperatorType.Prefix: ["->", "°", "not", "-"],
             OperatorType.Infix: ["^", ">", "<", "*", "/", "=", "+", "-", ".", "%"]
@@ -1513,9 +1508,9 @@ class File:
         for op in sorted(flatten_list(self.operators.values()), key=len, reverse=True):
             if self.slice(len(op)) == op:
                 self.position += len(op)
-                types = [
-                    typ for typ in self.operator_types if op in self.operators[typ]
-                ]
+                types = list(
+                    filter(lambda typ: op in self.operators[typ], self.operators.keys())
+                )
                 return ParserNode(ParserNode.Type.Operator, {"op": op, "types": types})
 
     def is_statement(self):
