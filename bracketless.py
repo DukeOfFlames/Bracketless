@@ -232,6 +232,8 @@ class RichRepr:
             return RichRepr.from_str("TopScope")
         if type(v) == FunctionType:
             return RichRepr.from_str(str(v))
+        if type(v) == OperatorType:
+            return RichRepr.from_str(str(v))
         if hasattr(v, "__call__"):
             res = RichRepr.from_str("Python Function:")
             res += (
@@ -343,15 +345,12 @@ class ParserNode:
     class Type(enum.Enum):
         Identifier = 0
         Integer = 1
-        PostfixOperator = 2
-        InfixOperator = 3
         OpeningCurly = 4
         ClosingCurly = 5
         Start = 6
         End = 7
         Block = 8
         Comma = 10
-        PrefixOperator = 11
         List = 13
         Assignment = 14
         String = 15
@@ -382,6 +381,7 @@ class ParserNode:
         WhileStatement = 42
         LibImportStatement = 43
         PyLibImportStatement = 44
+        Operator = 45
 
         def is_expression(self):
             return self in [
@@ -416,6 +416,21 @@ class ParserNode:
 
     def __repr__(self):
         raise Exception
+
+    def is_prefix_operator(self):
+        if self.type != ParserNode.Type.Operator:
+            return False
+        return OperatorType.Prefix in self.value["types"]
+
+    def is_infix_operator(self):
+        if self.type != ParserNode.Type.Operator:
+            return False
+        return OperatorType.Infix in self.value["types"]
+
+    def is_postfix_operator(self):
+        if self.type != ParserNode.Type.Operator:
+            return False
+        return OperatorType.Postfix in self.value["types"]
 
     def interpret(self, current_scope):
 
@@ -1042,6 +1057,13 @@ class WhereToStartError(Error):
         )  # Error: chars  @ x y IN file
 
 
+@enum.unique
+class OperatorType(enum.Enum):
+    Prefix = 0
+    Infix = 1
+    Postfix = 2
+
+
 class File:
     def __init__(self, content):
         self.content = content
@@ -1140,8 +1162,8 @@ class File:
             [
                 (lambda elem_0: elem_0.type == ParserNode.Type.Identifier),
                 (
-                    lambda elem_1: elem_1.type == ParserNode.Type.InfixOperator
-                    and elem_1.value == "="
+                    lambda elem_1: elem_1.is_infix_operator()
+                    and elem_1.value["op"] == "="
                 ),
                 (lambda elem_2: elem_2.type.is_expression()),
             ],
@@ -1166,8 +1188,8 @@ class File:
                     ]
                 ),
                 (
-                    lambda elem_2: elem_2.type == ParserNode.Type.InfixOperator
-                    and not elem_2.value in ["==", "<", ">", ">=", "<=", "%"]
+                    lambda elem_2: elem_2.is_infix_operator()
+                    and not elem_2.value["op"] in ["==", "<", ">", ">=", "<=", "%"]
                 ),
                 (
                     lambda elem_3: elem_3.type
@@ -1183,7 +1205,7 @@ class File:
             (
                 lambda arr: ParserNode(
                     ParserNode.Type.ConditionalExpression,
-                    (arr[0].value, arr[1].value, arr[2].value),
+                    (arr[0].value, arr[1].value, arr[2].value["op"]),
                 )
             ),
         ),
@@ -1191,37 +1213,26 @@ class File:
             "prefix_operation",
             [
                 (
-                    lambda elem_0: elem_0.type == ParserNode.Type.PrefixOperator
-                    and elem_0.value != "°"
+                    lambda elem_0: elem_0.is_prefix_operator()
+                    and elem_0.value["op"] != "°"
                 ),
                 (lambda elem_1: elem_1.type.is_expression()),
             ],
             (
                 lambda arr: ParserNode(
-                    ParserNode.Type.PrefixOperation, (arr[0].value, arr[1])
+                    ParserNode.Type.PrefixOperation, (arr[0].value["op"], arr[1])
                 )
             ),
-        ),
-        (
-            "prefix_operation",
-            [
-                (
-                    lambda elem_0: elem_0.type == ParserNode.Type.InfixOperator
-                    and elem_0.value == "-"
-                ),
-                (lambda elem_1: elem_1.type.is_expression()),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.PrefixOperation, ("-", arr[1]))),
         ),
         (
             "postfix_operation",
             [
                 (lambda elem_0: elem_0.type.is_expression()),
-                (lambda elem_1: elem_1.type == ParserNode.Type.PostfixOperator),
+                (lambda elem_1: elem_1.is_postfix_operator()),
             ],
             (
                 lambda arr: ParserNode(
-                    ParserNode.Type.PostfixOperation, (arr[0], arr[1].value)
+                    ParserNode.Type.PostfixOperation, (arr[0], arr[1].value["op"])
                 )
             ),
         ),
@@ -1230,14 +1241,14 @@ class File:
             [
                 (lambda elem_0: elem_0.type.is_expression()),
                 (
-                    lambda elem_1: elem_1.type == ParserNode.Type.InfixOperator
-                    and elem_1.value != "="
+                    lambda elem_1: elem_1.is_infix_operator()
+                    and elem_1.value["op"] != "="
                 ),
                 (lambda elem_2: elem_2.type.is_expression()),
             ],
             (
                 lambda arr: ParserNode(
-                    ParserNode.Type.InfixOperation, (arr[0], arr[1].value, arr[2])
+                    ParserNode.Type.InfixOperation, (arr[0], arr[1].value["op"], arr[2])
                 )
             ),
         ),
@@ -1245,8 +1256,8 @@ class File:
             "declaration_assignment",
             [
                 (
-                    lambda elem_0: elem_0.type == ParserNode.Type.PrefixOperator
-                    and elem_0.value == "°"
+                    lambda elem_0: elem_0.is_prefix_operator()
+                    and elem_0.value["op"] == "°"
                 ),
                 (lambda elem_1: elem_1.type == ParserNode.Type.Assignment),
             ],
@@ -1489,7 +1500,9 @@ class File:
         for op in self.prefix_operators:
             if self.slice(len(op)) == op:
                 self.position += len(op)
-                return ParserNode(ParserNode.Type.PrefixOperator, op)
+                return ParserNode(
+                    ParserNode.Type.Operator, {"op": op, "types": [OperatorType.Prefix]}
+                )
         raise Exception
 
     def is_statement(self):
@@ -1675,7 +1688,9 @@ class File:
     def parse_postfix_operator(self):
         c = self.get()
         self.position += 1
-        return ParserNode(ParserNode.Type.PostfixOperator, c)
+        return ParserNode(
+            ParserNode.Type.Operator, {"op": c, "types": [OperatorType.Postfix]}
+        )
 
     def is_infix_operator(self):
         if self.slice(3) in ["//=", "and", "not"]:
@@ -1702,7 +1717,7 @@ class File:
         if self.slice(3) in ["//=", "and", "not"]:
             s = self.slice(3)
             self.position += 3
-            return ParserNode(ParserNode.Type.InfixOperator, s)
+            op = s
         elif self.slice(2) in [
             "//",
             "%=",
@@ -1719,12 +1734,22 @@ class File:
         ]:
             s = self.slice(2)
             self.position += 2
-            return ParserNode(ParserNode.Type.InfixOperator, s)
+            op = s
         elif self.get() in ["^", ">", "<", "*", "/", "=", "+", "-", ".", "%"]:
             c = self.get()
             self.position += 1
-            return ParserNode(ParserNode.Type.InfixOperator, c)
-        raise Exception
+            op = c
+        else:
+            raise Exception
+        if op != "-":
+            return ParserNode(
+                ParserNode.Type.Operator, {"op": op, "types": [OperatorType.Infix]}
+            )
+        else:
+            return ParserNode(
+                ParserNode.Type.Operator,
+                {"op": op, "types": [OperatorType.Prefix, OperatorType.Infix]},
+            )
 
     def is_start(self):
         return self.slice(5) == "START"
