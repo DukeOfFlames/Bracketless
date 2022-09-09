@@ -1,11 +1,16 @@
-name: Tests on Push
+name: Actions on Push
 on: [push]
 jobs:
-  Tests-on-Push:
+  Actions-on-Push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.PAT }}
 
       - name: Test
         run: python run.py
+
+      - name: Format
+        run: python Helpers/format_on_push.py
