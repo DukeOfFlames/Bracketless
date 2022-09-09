@@ -874,7 +874,15 @@ class File:
         self.position = 0
         self.line_counter = 0
         self.column_counter = 0
-        self.prefix_operators = ['->', '°', 'not']
+        self.operator_types = [OperatorType.Prefix, OperatorType.Infix, OperatorType.Postfix]
+        self.operators = {
+            OperatorType.Prefix: ['->', '°', 'not', '-'],
+            OperatorType.Infix: ['^', '>', '<', '*', '/', '=', '+', '-', '.', '%'] + [
+            '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
+            '<=', 'or'
+        ] + ['//=', 'and'],
+            OperatorType.Postfix: ['!', '?']
+        }
         self.statements = ['if', 'elif', 'else', 'while', 'for']
 
         self.separators = ';:.'
@@ -1195,15 +1203,15 @@ class File:
         name = self.parse_identifier().value
         return ParserNode(ParserNode.Type.BuiltinIdentifier, name)
 
-    def is_prefix_operator(self):
-        return any([self.slice(len(op)) == op for op in self.prefix_operators])
+    def is_operator(self):
+        return any([self.slice(len(op)) == op for op in flatten_list(self.operators.values())])
 
-    def parse_prefix_operator(self):
-        for op in self.prefix_operators:
+    def parse_operator(self):
+        for op in sorted(flatten_list(self.operators.values()), key=len, reverse=True):
             if self.slice(len(op)) == op:
                 self.position += len(op)
-                return ParserNode(ParserNode.Type.Operator, {"op": op, "types": [OperatorType.Prefix]})
-        raise Exception
+                types = [typ for typ in self.operator_types if op in self.operators[typ]]
+                return ParserNode(ParserNode.Type.Operator, {"op": op, "types": types})
 
     def is_statement(self):
         for statement in self.statements:
@@ -1231,9 +1239,7 @@ class File:
             (self.is_end, self.parse_end), (self.is_string, self.parse_string),
             (self.is_try, self.parse_try),
             (self.is_statement, self.parse_statement),
-            (self.is_prefix_operator, self.parse_prefix_operator),
-            (self.is_postfix_operator, self.parse_postfix_operator),
-            (self.is_infix_operator, self.parse_infix_operator),
+            (self.is_operator, self.parse_operator),
             (self.is_hex, self.parse_hex),
             (self.is_bin, self.parse_bin),
             (self.is_number, self.parse_number),
@@ -1374,48 +1380,6 @@ class File:
             return ParserNode(ParserNode.Type.Float, number)
         else:
             return ParserNode(ParserNode.Type.Integer, number)
-
-    def is_postfix_operator(self):
-        return self.get() in ['!', '?']
-
-    def parse_postfix_operator(self):
-        c = self.get()
-        self.position += 1
-        return ParserNode(ParserNode.Type.Operator, {"op": c, "types": [OperatorType.Postfix]})
-
-    def is_infix_operator(self):
-        if self.slice(3) in ['//=', 'and', 'not']:
-            return True
-        elif self.slice(2) in [
-            '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
-            '<=', 'or'
-        ]:
-            return True
-        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.', '%']:
-            return True
-
-    def parse_infix_operator(self):
-        if self.slice(3) in ['//=', 'and', 'not']:
-            s = self.slice(3)
-            self.position += 3
-            op = s
-        elif self.slice(2) in [
-            '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
-            '<=', 'or'
-        ]:
-            s = self.slice(2)
-            self.position += 2
-            op = s
-        elif self.get() in ['^', '>', '<', '*', '/', '=', '+', '-', '.', '%']:
-            c = self.get()
-            self.position += 1
-            op = c
-        else:
-            raise Exception
-        if op != '-':
-            return ParserNode(ParserNode.Type.Operator, {"op": op, "types": [OperatorType.Infix]})
-        else:
-            return ParserNode(ParserNode.Type.Operator, {"op": op, "types": [OperatorType.Prefix, OperatorType.Infix]})
 
     def is_start(self):
         return self.slice(5) == "START"
