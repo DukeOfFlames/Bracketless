@@ -371,7 +371,6 @@ class ParserNode:
         DeclarationAssignment = 30
         BuiltinIdentifier = 31
         Float = 32
-        ForLoopExpression = 33
         Try = 34
         Hexadecimal = 35
         Binary = 36
@@ -1153,23 +1152,6 @@ class File:
             ),
         ),
         (
-            "for_loop_expression",
-            [
-                (lambda elem_0: True),
-                (lambda elem_1: elem_1.type == ParserNode.Type.Identifier),
-                (
-                    lambda elem_2: elem_2.type == ParserNode.Type.InfixOperator
-                    and elem_2.value == ":"
-                ),
-                (lambda elem_3: elem_3.type.is_iterable()),
-            ],
-            (
-                lambda arr: ParserNode(
-                    ParserNode.Type.ForLoopExpression, (arr[1].value, arr[3].value)
-                )
-            ),
-        ),
-        (
             "conditional_expression",
             [
                 (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword),
@@ -1416,7 +1398,6 @@ class File:
             "prefix_operation",
             "assignment",
             "declaration_assignment",
-            "for_loop_expression",
         ]
         i = 0
         while i < len(recognize_list):
