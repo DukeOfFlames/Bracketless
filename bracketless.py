@@ -709,6 +709,27 @@ class ParserNode:
                 block.interpret(current_scope)
             return None
 
+        if self.type == ParserNode.Type.SwitchStatement:
+            value = self.value[0].interpret(current_scope)
+            for case in self.value[1]:
+                other_value = case["case"].interpret(current_scope)
+                comparison = ParserNode(
+                    ParserNode.Type.InfixOperation,
+                    (
+                        ParserNode(ParserNode.Type.InternalInterpreterNode, value),
+                        "==",
+                        ParserNode(
+                            ParserNode.Type.InternalInterpreterNode, other_value
+                        ),
+                    ),
+                ).interpret(None)
+                if comparison.type != InterpreterNode.Type.Boolean:
+                    raise Exception
+                if comparison.value:
+                    block = case["block"]
+                    block.interpret(current_scope)
+            return None
+
         if self.type == ParserNode.Type.PyLibImportStatement:
             lib_name = self.value
             lib = __import__(lib_name)
@@ -1969,7 +1990,7 @@ class File:
     def parse_switch(self):
         self.parse_switch_keyword()
         self.skip_useless()
-        sw = self.parse_any()
+        sw = self.parse_thing()
         self.skip_useless()
         cases = self.parse_case_block()
         self.skip_useless()
@@ -1988,7 +2009,7 @@ class File:
             self.skip_useless()
             self.parse_case_keyword()
             self.skip_useless()
-            case = self.parse_any()
+            case = self.parse_thing()
             self.skip_useless()
             block = self.parse_block()
             cases.append({"case": case, "block": block})
