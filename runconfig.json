@@ -2,6 +2,7 @@
 	"visible": [
 	],
 	"silent": [
+		"bad_formatting",
 		"switchcase",
 		"func_func_func",
 		"map_filter_reduce",
