@@ -1218,7 +1218,7 @@ class File:
         return ParserNode(ParserNode.Type.BuiltinIdentifier, name)
 
     def is_operator(self):
-        return any([self.is_str(op) for op in flatten_list(Syntax.operators.values())])
+        return self.is_any_str(flatten_list(Syntax.operators.values()))
 
     def parse_operator(self):
         for op in sorted(flatten_list(Syntax.operators.values()), key=len, reverse=True):
@@ -1228,9 +1228,7 @@ class File:
                 return ParserNode(ParserNode.Type.Operator, op)
 
     def is_statement(self):
-        for statement in Syntax.statements:
-            if self.is_str(statement):
-                return True
+        return self.is_any_str(Syntax.statements)
 
     def parse_statement(self):
         for statement in Syntax.statements:
@@ -1329,7 +1327,7 @@ class File:
     def is_number(self):
         if self.is_str('.') and self.content[self.position + 1] in string.digits:
             return True
-        elif self.is_any_str(string.digits + 'π') or self.is_any_str(['inf', 'NaN']):
+        elif self.is_any_str(list(string.digits) + ['π', 'inf', 'NaN']):
             return True
 
     def parse_number(self):
