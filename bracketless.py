@@ -274,12 +274,12 @@ class ParserNode:
         List = 13
         Assignment = 14
         String = 15
-        ConditionalExpression = 16  # WIP
+        ConditionalExpression = 16
         StatementKeyword = 17
         Function = 18
-        ForLoop = 19  # WIP
-        WhileLoop = 20  # WIP
-        Class = 21  # WIP
+        ForLoop = 19
+        WhileLoop = 20
+        Class = 21
         Boolean = 22
         FunctionCallOrListIndexing = 23
         PrefixOperation = 24
@@ -302,6 +302,7 @@ class ParserNode:
         LibImportStatement = 43
         PyLibImportStatement = 44
         Operator = 45
+        SwitchStatement = 46
 
         def is_expression(self):
             return self in [
@@ -877,7 +878,7 @@ class Syntax:
     ] + ['//=', 'and'],
         OperatorType.Postfix: ['!', '?']
     }
-    statements = ['if', 'elif', 'else', 'while', 'for']
+    statements = ['if', 'elif', 'else', 'while', 'for', 'switch', 'case']
 
 
 class File:
@@ -1164,10 +1165,10 @@ class File:
         return self.slice(4) == 'true' or self.slice(5) == 'false'
 
     def parse_boolean(self):
-        if self.slice(5) == 'False':
+        if self.slice(5) == 'false':
             self.position += 5
             return ParserNode(ParserNode.Type.Boolean, self.slice(5))
-        elif self.slice(4) == 'True':
+        elif self.slice(4) == 'true':
             self.position += 4
             return ParserNode(ParserNode.Type.Boolean, self.slice(4))
 
@@ -1237,6 +1238,7 @@ class File:
         for (is_x, parse_x) in [
             (self.is_start, self.parse_start),
             (self.is_class, self.parse_class),
+            (self.is_switch, self.parse_switch),
             (self.is_function, self.parse_function),
             (self.is_end, self.parse_end), (self.is_string, self.parse_string),
             (self.is_try, self.parse_try),
@@ -1631,6 +1633,57 @@ class File:
             if self.slice(len(s)) == s:
                 self.position += len(s)
                 return ParserNode(ParserNode.Type.Boolean, s == "True")
+
+    def parse_any(self):
+        result = ''
+        while not self.is_whitespace():
+            result += self.get()
+            self.position += 1
+
+        if len(result) == 0:
+            raise Exception
+
+        return result
+
+    def is_switch(self):
+        return self.slice(6) == 'switch'
+
+    def parse_switch_keyword(self):
+        if self.slice(6) != 'switch':
+            raise Exception
+        self.position += 6
+
+    def parse_switch(self):
+        self.parse_switch_keyword()
+        self.skip_useless()
+        sw = self.parse_any()
+        self.skip_useless()
+        cases = self.parse_case_block()
+        self.skip_useless()
+
+        return ParserNode(ParserNode.Type.SwitchStatement, (sw, cases))
+
+    def parse_case_keyword(self):
+        if self.slice(4) != 'case':
+            raise Exception
+        self.position += 4
+
+    def parse_case_block(self):
+        cases = []
+        self.parse_opening_curly()
+        while not self.is_closing_curly():
+            self.skip_useless()
+            self.parse_case_keyword()
+            self.skip_useless()
+            case = self.parse_any()
+            self.skip_useless()
+            block = self.parse_block()
+            cases.append({"case": case, "block": block})
+            self.skip_useless()
+
+        self.parse_closing_curly()
+
+        return cases
 
 
 def main(filename):
