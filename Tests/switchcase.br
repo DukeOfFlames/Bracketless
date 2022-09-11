@@ -1,0 +1,14 @@
+START
+°a = 1
+
+switch a {
+    case 1 {
+        #drucke{a}
+    }
+
+    case 2 {
+        #drucke{100}
+    }
+}
+
+END
