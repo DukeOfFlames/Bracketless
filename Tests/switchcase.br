@@ -1,11 +1,22 @@
 START
+
 °a = 1
 
 switch a {
     case 1 {
         #drucke{a}
     }
+    case 2 {
+        #drucke{100}
+    }
+}
 
+fn f{} { -> 2 }
+
+switch {f{}} {
+    case 1 {
+        #drucke{f{}}
+    }
     case 2 {
         #drucke{100}
     }

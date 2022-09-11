@@ -164,7 +164,7 @@ class RichRepr:
         if type(v) == Scope:
             return RichRepr.from_str("Scope:") + (RichRepr.from_str("Variables:") + RichRepr.from_any(
                 [name for name, value in v.vars.items()]).indent()).indent() + (
-                               RichRepr.from_str("Parent Scope:") + RichRepr.from_any(v.parent_scope).indent()).indent()
+                           RichRepr.from_str("Parent Scope:") + RichRepr.from_any(v.parent_scope).indent()).indent()
         if type(v) == TopScope:
             return RichRepr.from_str("TopScope")
         if type(v) == FunctionType:
@@ -513,9 +513,9 @@ class ParserNode:
                         return ParserNode(ParserNode.Type.FunctionCallOrListIndexing,
                                           (ParserNode(ParserNode.Type.InternalInterpreterNode, lhs), [
                                               ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (
-                                              ParserNode(ParserNode.Type.InternalInterpreterNode, rhs), [
-                                                  ParserNode(ParserNode.Type.InternalInterpreterNode,
-                                                             param)]))])).interpret(None)
+                                                  ParserNode(ParserNode.Type.InternalInterpreterNode, rhs), [
+                                                      ParserNode(ParserNode.Type.InternalInterpreterNode,
+                                                                 param)]))])).interpret(None)
 
                     return InterpreterNode(InterpreterNode.Type.Function,
                                            {"type": FunctionType.Internal, "body": combined_func})
@@ -566,6 +566,22 @@ class ParserNode:
                 if not should_continue.value:
                     break
                 block.interpret(current_scope)
+            return None
+
+        if self.type == ParserNode.Type.SwitchStatement:
+            value = self.value[0].interpret(current_scope)
+            for case in self.value[1]:
+                other_value = case["case"].interpret(current_scope)
+                comparison = ParserNode(ParserNode.Type.InfixOperation, (
+                    ParserNode(ParserNode.Type.InternalInterpreterNode, value),
+                    "==",
+                    ParserNode(ParserNode.Type.InternalInterpreterNode, other_value)
+                )).interpret(None)
+                if comparison.type != InterpreterNode.Type.Boolean:
+                    raise Exception
+                if comparison.value:
+                    block = case["block"]
+                    block.interpret(current_scope)
             return None
 
         if self.type == ParserNode.Type.PyLibImportStatement:
@@ -808,8 +824,8 @@ class Builtins:
         if func.type != InterpreterNode.Type.Function:
             raise Exception
         return InterpreterNode(InterpreterNode.Type.List, [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (
-        ParserNode(ParserNode.Type.InternalInterpreterNode, func),
-        [ParserNode(ParserNode.Type.InternalInterpreterNode, elem)])).interpret(None) for elem in lst.value])
+            ParserNode(ParserNode.Type.InternalInterpreterNode, func),
+            [ParserNode(ParserNode.Type.InternalInterpreterNode, elem)])).interpret(None) for elem in lst.value])
 
     builtins["for_each"] = InterpreterNode(InterpreterNode.Type.Function,
                                            {"type": FunctionType.Internal, "body": for_each})
@@ -873,9 +889,9 @@ class Syntax:
     operators = {
         OperatorType.Prefix: ['->', '°', 'not', '-'],
         OperatorType.Infix: ['^', '>', '<', '*', '/', '=', '+', '-', '.', '%'] + [
-        '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
-        '<=', 'or'
-    ] + ['//=', 'and'],
+            '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
+            '<=', 'or'
+        ] + ['//=', 'and'],
         OperatorType.Postfix: ['!', '?']
     }
     statements = ['if', 'elif', 'else', 'while', 'for', 'switch', 'case']
@@ -989,8 +1005,8 @@ class File:
                                                 ParserNode.Type.Integer, ParserNode.Type.List,
                                                 ParserNode.Type.Function]),
                 (lambda elem_2: elem_2.is_infix_operator() and not elem_2.value in ['==', '<', '>',
-                                                                                                      '>=',
-                                                                                                      '<=', '%']),
+                                                                                    '>=',
+                                                                                    '<=', '%']),
                 (lambda elem_3: elem_3.type in [ParserNode.Type.Identifier, ParserNode.Type.String,
                                                 ParserNode.Type.Integer, ParserNode.Type.List,
                                                 ParserNode.Type.Function]),
@@ -1644,7 +1660,7 @@ class File:
     def parse_switch(self):
         self.parse_switch_keyword()
         self.skip_useless()
-        sw = self.parse_any()
+        sw = self.parse_thing()
         self.skip_useless()
         cases = self.parse_case_block()
         self.skip_useless()
@@ -1663,7 +1679,7 @@ class File:
             self.skip_useless()
             self.parse_case_keyword()
             self.skip_useless()
-            case = self.parse_any()
+            case = self.parse_thing()
             self.skip_useless()
             block = self.parse_block()
             cases.append({"case": case, "block": block})
