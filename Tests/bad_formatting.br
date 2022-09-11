@@ -1,0 +1,46 @@
+START
+
+{
+    °a=3fnsquare{x}{°res=x*x->res}#drucke{square{a}}
+}
+
+{
+    °a = 3
+    fn square {x}
+    {
+        °res = x * x
+        -> res
+    }
+    #drucke{square{a}}
+}
+
+{
+    °
+    a
+    =
+    3
+    fn
+    square
+    {
+    x
+    }
+    {
+    °
+    res
+    =
+    x
+    *
+    x
+    ->
+    res
+    }
+    #drucke
+    {
+    square
+    {
+    a
+    }
+    }
+}
+
+END
