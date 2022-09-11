@@ -1,4 +1,9 @@
 import subprocess
+import json
+
+
+def flatten_list(lst):
+    return [inner for outer in lst for inner in outer]
 
 
 class TestType:
@@ -7,19 +12,10 @@ class TestType:
     Visible = 2
 
 
-with open('visible.runconfig', 'rt') as f_in:
-    visible_tests = f_in.read().split('\n')
+with open('runconfig.json', 'r') as f:
+    tests = json.load(f)
 
-with open('silent.runconfig', 'rt') as f_in:
-    silent_tests = f_in.read().split('\n')
-
-with open('broken.runconfig', 'rt') as f_in:
-    broken_tests = f_in.read().split('\n')
-
-tests = []
-for (test_type, lst) in [(TestType.Visible, visible_tests), (TestType.Silent, silent_tests),
-                         (TestType.Broken, broken_tests)]:
-    tests += [(test_type, test_name) for test_name in lst]
+tests = flatten_list([[({'visible': TestType.Visible, 'silent': TestType.Silent, 'broken': TestType.Broken}[test_type], test_name) for test_name in tests[test_type]] for test_type in tests.keys()])
 
 for (test_type, test_name) in tests:
     if test_name == '':
