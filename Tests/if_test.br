@@ -1,14 +1,14 @@
 START
 {
     °a = 0
-    if True {
+    if true {
         a = 5
     }
     #drucke{a}
 }
 {
     °a = 0
-    if False {
+    if false {
         a = 5
     }
     #drucke{a}

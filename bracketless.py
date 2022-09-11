@@ -654,7 +654,7 @@ class InterpreterNode:
         if self.type == InterpreterNode.Type.List:
             return "{" + ", ".join([node.representation() for node in self.value]) + "}"
         if self.type == InterpreterNode.Type.Boolean:
-            return "True" if self.value else "False"
+            return "true" if self.value else "false"
         if self.type == InterpreterNode.Type.Function:
             return rich_repr(self)
         raise Exception
@@ -1161,17 +1161,6 @@ class File:
         final_node = ParserNode(ParserNode.Type.Block, things)
         return final_node
 
-    def is_boolean(self):
-        return self.slice(4) == 'true' or self.slice(5) == 'false'
-
-    def parse_boolean(self):
-        if self.slice(5) == 'false':
-            self.position += 5
-            return ParserNode(ParserNode.Type.Boolean, self.slice(5))
-        elif self.slice(4) == 'true':
-            self.position += 4
-            return ParserNode(ParserNode.Type.Boolean, self.slice(4))
-
     def is_block(self):
         return self.get() == '{'
 
@@ -1257,7 +1246,6 @@ class File:
             (self.is_closing_curly, self.parse_closing_curly),
             (self.is_comma, self.parse_comma),
             (self.is_builtin_identifier, self.parse_builtin_identifier),
-            (self.is_boolean, self.parse_boolean),
             (self.is_colon, self.parse_colon)
         ]:
             if is_x():
@@ -1623,16 +1611,16 @@ class File:
         return ParserNode(ParserNode.Type.Function, res)
 
     def is_boolean(self):
-        for s in ["True", "False"]:
+        for s in ["true", "false"]:
             if self.slice(len(s)) == s:
                 return True
         return False
 
     def parse_boolean(self):
-        for s in ["True", "False"]:
+        for s in ["true", "false"]:
             if self.slice(len(s)) == s:
                 self.position += len(s)
-                return ParserNode(ParserNode.Type.Boolean, s == "True")
+                return ParserNode(ParserNode.Type.Boolean, s == "true")
 
     def parse_any(self):
         result = ''

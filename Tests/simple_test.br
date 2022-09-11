@@ -3,7 +3,7 @@ START
 °b = "Hi"
 °a = b
 
-if True {
+if true {
     #drucke{a}
 }
 
