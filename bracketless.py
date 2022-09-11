@@ -1280,17 +1280,6 @@ class File:
             self.position += 1
         return ParserNode(ParserNode.Type.Identifier, identifier)
 
-    # def is_integer(self):
-    #     return self.get() in string.digits
-
-    # def parse_integer(self):
-    #     integer = 0
-    #     while self.get() in string.digits:
-    #         integer *= 10
-    #         integer += int(self.get())
-    #         self.position += 1
-    #     return ParserNode(ParserNode.Type.Integer, integer)
-
     def is_hex(self):
         return self.slice(2) == '0x' and self.content[
             self.position + 2] in string.digits + 'AaBbCcDdEeFf'
