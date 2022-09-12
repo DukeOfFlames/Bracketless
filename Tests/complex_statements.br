@@ -21,8 +21,8 @@ for n : {#range{5}} {
 °x = 4.0
 while {x > 0.4} {
     #drucke{"while " + #string{x} + " 1"}
-	#drucke{"while " + #string{x} + " 2"}
-	x = x / 3
+    #drucke{"while " + #string{x} + " 2"}
+    x = x / 3
 }
 
 END
