@@ -1,0 +1,4 @@
+Operations: Prefix Operation, Infix Operation, Postfix Operation
+Assignment: Assignment, Declaration-Assignment
+Function Call or List Indexing
+Control Flow: If Statement, If-Else Statement, For Loop, While Loop
