@@ -559,6 +559,14 @@ class ParserNode:
             lhs = self.value[0].interpret(current_scope)
             op = self.value[1]
             rhs = self.value[2].interpret(current_scope)
+            if op == "+":
+                if (
+                    lhs.type == InterpreterNode.Type.String
+                    and rhs.type == InterpreterNode.Type.String
+                ):
+                    return InterpreterNode(
+                        InterpreterNode.Type.String, lhs.value + rhs.value
+                    )
             # Numerical operators that allow both integers and floats
             if op in ["+", "-", "*", "^", "//"]:
                 func = {
