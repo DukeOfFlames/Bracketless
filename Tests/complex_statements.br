@@ -1,0 +1,28 @@
+START
+
+if true {
+    #drucke{"if 1"}
+    #drucke{"if 2"}
+}
+
+if false {
+    #drucke{"if-else 1"}
+    #drucke{"if-else 2"}
+} else {
+    #drucke{"if-else 3"}
+    #drucke{"if-else 4"}
+}
+
+for n : {#range{5}} {
+    #drucke{"for " + #string{n} + " 1"}
+    #drucke{"for " + #string{n} + " 2"}
+}
+
+°x = 4.0
+while {x > 0.4} {
+    #drucke{"while " + #string{x} + " 1"}
+    #drucke{"while " + #string{x} + " 2"}
+    x = x / 3
+}
+
+END

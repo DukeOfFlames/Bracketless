@@ -2,6 +2,7 @@
 	"visible": [
 	],
 	"silent": [
+		"complex_statements",
 		"two_args",
 		"bad_formatting",
 		"switchcase",
