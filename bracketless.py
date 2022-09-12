@@ -1104,10 +1104,6 @@ class File:
         self.line_counter = 0
         self.column_counter = 0
 
-        self.separators = ";:."
-        self.pos1 = 0  # for saving positions
-        self.virtpos = 0  # for simulating parse-progressions
-
     def get(self):
         return self.content[self.position]
 
