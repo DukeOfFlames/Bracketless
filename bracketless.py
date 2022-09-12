@@ -144,7 +144,7 @@ class RichRepr:
         return RichRepr([(line, indentation + 1) for (line, indentation) in self.lst])
 
     def from_any(v):
-        if type(v) in [str, int, bool, float]:
+        if type(v) in [str, int, bool, float, type(None)]:
             return RichRepr.from_str(repr(v))
         if type(v) == list:
             return RichRepr.from_str("[") + RichRepr.concatenate(
