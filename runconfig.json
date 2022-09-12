@@ -2,6 +2,7 @@
 	"visible": [
 	],
 	"silent": [
+		"two_args",
 		"bad_formatting",
 		"switchcase",
 		"func_func_func",
