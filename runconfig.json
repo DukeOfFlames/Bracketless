@@ -50,6 +50,7 @@
 		"complex_dot_n/10"
 	],
 	"broken": [
+		"boolean_operator_precedence",
 		"point",
 		"reversed",
 		"test",

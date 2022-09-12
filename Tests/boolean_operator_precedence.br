@@ -1,0 +1,7 @@
+START
+°a = true
+°b = false
+#drucke{{not a} and b}
+#drucke{not a and b}
+#drucke{not {a and b}}
+END
