@@ -1525,11 +1525,11 @@ class File:
     def parse_thing(self, no_blocks=False):
         self.skip_useless()
         for (is_x, parse_x) in [
-            (self.is_start, self.parse_start),
+            (self.is_start_keyword, self.parse_start_keyword),
             (self.is_class, self.parse_class),
             (self.is_switch, self.parse_switch),
             (self.is_function, self.parse_function),
-            (self.is_end, self.parse_end),
+            (self.is_end_keyword, self.parse_end_keyword),
             (self.is_string, self.parse_string),
             (self.is_try, self.parse_try),
             (self.is_statement, self.parse_statement),
@@ -1674,17 +1674,17 @@ class File:
         else:
             return ParserNode(ParserNode.Type.Integer, number)
 
-    def is_start(self):
+    def is_start_keyword(self):
         return self.is_str("START")
 
-    def parse_start(self):
+    def parse_start_keyword(self):
         self.position += 5
         return ParserNode(ParserNode.Type.Start, None)
 
-    def is_end(self):
+    def is_end_keyword(self):
         return self.is_str("END")
 
-    def parse_end(self):
+    def parse_end_keyword(self):
         self.position += 3
         return ParserNode(ParserNode.Type.End, None)
 
