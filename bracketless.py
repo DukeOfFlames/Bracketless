@@ -382,6 +382,8 @@ class ParserNode:
         PyLibImportStatement = 44
         Operator = 45
         SwitchStatement = 46
+        AssignmentOperator = 47
+        DeclarationAssignmentPrefix = 48
 
         def is_iterable(self):
             return self in [ParserNode.Type.String, ParserNode.Type.List]
@@ -1108,8 +1110,8 @@ class OperatorType(enum.Enum):
 
 class Syntax:
     operators = {
-        OperatorType.Prefix: ["->", "°", "not", "-"],
-        OperatorType.Infix: ["^", ">", "<", "*", "/", "=", "+", "-", ".", "%"]
+        OperatorType.Prefix: ["->", "not", "-"],
+        OperatorType.Infix: ["^", ">", "<", "*", "/", "+", "-", ".", "%"]
         + ["//", "%=", "+=", "==", "-=", "*=", "^=", "==", "/=", ">=", "<=", "or"]
         + ["//=", "and"],
         OperatorType.Postfix: ["!", "?"],
@@ -1214,7 +1216,7 @@ class File:
             "assignment",
             [
                 (lambda elem_0: elem_0.type == ParserNode.Type.Identifier),
-                (lambda elem_1: elem_1.is_infix_operator() and elem_1.value == "="),
+                (lambda elem_1: elem_1.type == ParserNode.Type.AssignmentOperator),
                 (lambda elem_2: elem_2.is_expression()),
             ],
             (
@@ -1226,7 +1228,7 @@ class File:
         (
             "prefix_operation",
             [
-                (lambda elem_0: elem_0.is_prefix_operator() and elem_0.value != "°"),
+                (lambda elem_0: elem_0.is_prefix_operator()),
                 (lambda elem_1: elem_1.is_expression()),
             ],
             (
@@ -1251,7 +1253,7 @@ class File:
             "infix_operation",
             [
                 (lambda elem_0: elem_0.is_expression()),
-                (lambda elem_1: elem_1.is_infix_operator() and elem_1.value != "="),
+                (lambda elem_1: elem_1.is_infix_operator()),
                 (lambda elem_2: elem_2.is_expression()),
             ],
             (
@@ -1263,7 +1265,10 @@ class File:
         (
             "declaration_assignment",
             [
-                (lambda elem_0: elem_0.is_prefix_operator() and elem_0.value == "°"),
+                (
+                    lambda elem_0: elem_0.type
+                    == ParserNode.Type.DeclarationAssignmentPrefix
+                ),
                 (lambda elem_1: elem_1.type == ParserNode.Type.Assignment),
             ],
             (
@@ -1529,6 +1534,11 @@ class File:
             (self.is_try, self.parse_try),
             (self.is_statement, self.parse_statement),
             (self.is_operator, self.parse_operator),
+            (self.is_assignment_operator, self.parse_assignment_operator),
+            (
+                self.is_declaration_assignment_prefix,
+                self.parse_declaration_assignment_prefix,
+            ),
             (self.is_hex, self.parse_hex),
             (self.is_bin, self.parse_bin),
             (self.is_number, self.parse_number),
@@ -1985,6 +1995,24 @@ class File:
         self.parse_closing_curly()
 
         return cases
+
+    def is_assignment_operator(self):
+        return self.is_str("=")
+
+    def parse_assignment_operator(self):
+        if not self.is_str("="):
+            raise Exception
+        self.position += 1
+        return ParserNode(ParserNode.Type.AssignmentOperator, None)
+
+    def is_declaration_assignment_prefix(self):
+        return self.is_str("°")
+
+    def parse_declaration_assignment_prefix(self):
+        if not self.is_str("°"):
+            raise Exception
+        self.position += 1
+        return ParserNode(ParserNode.Type.DeclarationAssignmentPrefix, None)
 
 
 def main(filename):
