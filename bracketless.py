@@ -303,18 +303,6 @@ class ParserNode:
         Operator = 45
         SwitchStatement = 46
 
-        def is_expression(self):
-            return self in [
-                ParserNode.Type.Identifier, ParserNode.Type.Integer, ParserNode.Type.Block,
-                ParserNode.Type.List, ParserNode.Type.Assignment, ParserNode.Type.String,
-                ParserNode.Type.Function, ParserNode.Type.Class,
-                ParserNode.Type.Boolean, ParserNode.Type.FunctionCallOrListIndexing, ParserNode.Type.PrefixOperation,
-                ParserNode.Type.PostfixOperation, ParserNode.Type.InfixOperation,
-                ParserNode.Type.DeclarationAssignment,
-                ParserNode.Type.BuiltinIdentifier,
-                ParserNode.Type.Float
-            ]
-
         def is_iterable(self):
             return self in [
                 ParserNode.Type.String, ParserNode.Type.List
@@ -331,6 +319,22 @@ class ParserNode:
 
     def __repr__(self):
         raise Exception
+
+    def is_expression(self):
+        if self.type in [
+            ParserNode.Type.Identifier, ParserNode.Type.Integer,
+            ParserNode.Type.List, ParserNode.Type.Assignment, ParserNode.Type.String,
+            ParserNode.Type.Function, ParserNode.Type.Class,
+            ParserNode.Type.Boolean, ParserNode.Type.FunctionCallOrListIndexing, ParserNode.Type.PrefixOperation,
+            ParserNode.Type.PostfixOperation, ParserNode.Type.InfixOperation,
+            ParserNode.Type.DeclarationAssignment,
+            ParserNode.Type.BuiltinIdentifier,
+            ParserNode.Type.Float
+        ]:
+            return True
+        if self.type == ParserNode.Type.Block and len(self.value) == 1:
+            return True
+        return False
 
     def is_prefix_operator(self):
         if self.type != ParserNode.Type.Operator:
@@ -1005,7 +1009,7 @@ class File:
             [
                 (lambda elem_0: elem_0.type == ParserNode.Type.Identifier),
                 (lambda elem_1: elem_1.is_infix_operator() and elem_1.value == '='),
-                (lambda elem_2: elem_2.type.is_expression()),
+                (lambda elem_2: elem_2.is_expression()),
             ],
             (lambda arr: ParserNode(ParserNode.Type.Assignment, (arr[0].value, arr[2]))),
         ),
@@ -1013,14 +1017,14 @@ class File:
             "prefix_operation",
             [
                 (lambda elem_0: elem_0.is_prefix_operator() and elem_0.value != '°'),
-                (lambda elem_1: elem_1.type.is_expression()),
+                (lambda elem_1: elem_1.is_expression()),
             ],
             (lambda arr: ParserNode(ParserNode.Type.PrefixOperation, (arr[0].value, arr[1]))),
         ),
         (
             "postfix_operation",
             [
-                (lambda elem_0: elem_0.type.is_expression()),
+                (lambda elem_0: elem_0.is_expression()),
                 (lambda elem_1: elem_1.is_postfix_operator()),
             ],
             (lambda arr: ParserNode(ParserNode.Type.PostfixOperation, (arr[0], arr[1].value))),
@@ -1028,9 +1032,9 @@ class File:
         (
             "infix_operation",
             [
-                (lambda elem_0: elem_0.type.is_expression()),
+                (lambda elem_0: elem_0.is_expression()),
                 (lambda elem_1: elem_1.is_infix_operator() and elem_1.value != '='),
-                (lambda elem_2: elem_2.type.is_expression()),
+                (lambda elem_2: elem_2.is_expression()),
             ],
             (lambda arr: ParserNode(ParserNode.Type.InfixOperation, (arr[0], arr[1].value, arr[2]))),
         ),
@@ -1045,7 +1049,7 @@ class File:
         (
             "function_call_or_list_indexing",
             [
-                (lambda elem_0: elem_0.type.is_expression()),
+                (lambda elem_0: elem_0.is_expression()),
                 (lambda elem_1: elem_1.type == ParserNode.Type.Block and len(elem_1.value) == 0),
             ],
             (lambda arr: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (arr[0], []))),
@@ -1053,7 +1057,7 @@ class File:
         (
             "function_call_or_list_indexing",
             [
-                (lambda elem_0: elem_0.type.is_expression()),
+                (lambda elem_0: elem_0.is_expression()),
                 (lambda elem_1: elem_1.type == ParserNode.Type.Block and len(elem_1.value) == 1),
             ],
             (lambda arr: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (arr[0], [arr[1].value[0]]))),
@@ -1061,7 +1065,7 @@ class File:
         (
             "function_call_or_list_indexing",
             [
-                (lambda elem_0: elem_0.type.is_expression()),
+                (lambda elem_0: elem_0.is_expression()),
                 (lambda elem_1: elem_1.type == ParserNode.Type.List),
             ],
             (lambda arr: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (arr[0], arr[1].value))),
@@ -1070,8 +1074,8 @@ class File:
             "if_statement",
             [
                 (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "if"),
-                (lambda elem_1: elem_1.type.is_expression()),
-                (lambda elem_2: elem_2.type.is_expression()),
+                (lambda elem_1: elem_1.is_expression()),
+                (lambda elem_2: True),
             ],
             (lambda arr: ParserNode(ParserNode.Type.IfStatement, (arr[1], arr[2]))),
         ),
@@ -1079,10 +1083,10 @@ class File:
             "if_else_statement",
             [
                 (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "if"),
-                (lambda elem_1: elem_1.type.is_expression()),
-                (lambda elem_2: elem_2.type.is_expression()),
+                (lambda elem_1: elem_1.is_expression()),
+                (lambda elem_2: True),
                 (lambda elem_3: elem_3.type == ParserNode.Type.StatementKeyword and elem_3.value == "else"),
-                (lambda elem_4: elem_4.type.is_expression()),
+                (lambda elem_4: True),
             ],
             (lambda arr: ParserNode(ParserNode.Type.IfElseStatement, (arr[1], arr[2], arr[4]))),
         ),
@@ -1092,8 +1096,8 @@ class File:
                 (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "for"),
                 (lambda elem_1: elem_1.type == ParserNode.Type.Identifier),
                 (lambda elem_2: elem_2.type == ParserNode.Type.Colon),
-                (lambda elem_3: elem_3.type.is_expression()),
-                (lambda elem_4: elem_4.type.is_expression()),
+                (lambda elem_3: elem_3.is_expression()),
+                (lambda elem_4: True),
             ],
             (lambda arr: ParserNode(ParserNode.Type.ForStatement, (arr[1].value, arr[3], arr[4]))),
         ),
@@ -1101,8 +1105,8 @@ class File:
             "while_statement",
             [
                 (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "while"),
-                (lambda elem_1: elem_1.type.is_expression()),
-                (lambda elem_2: elem_2.type.is_expression()),
+                (lambda elem_1: elem_1.is_expression()),
+                (lambda elem_2: True),
             ],
             (lambda arr: ParserNode(ParserNode.Type.WhileStatement, (arr[1], arr[2]))),
         ),
