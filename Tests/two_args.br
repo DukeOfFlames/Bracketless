@@ -1,0 +1,4 @@
+START
+fn pythagoras{x, y} { -> {x^2} + {y^2} }
+#drucke{pythagoras{3, 4}}
+END
