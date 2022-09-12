@@ -87,12 +87,13 @@ def python_value_from_bracketless_value(bracketless_value):
         def call(*python_params):
             return python_value_from_bracketless_value(
                 ParserNode(
-                    ParserNode.Type.FunctionCallOrListIndexing, (
-                        ParserNode(ParserNode.Type.InternalInterpreterNode, bracketless_func),
-                        [ParserNode(ParserNode.Type.InternalInterpreterNode,
-                                    bracketless_value_from_python_value(python_param)) for python_param in
-                         python_params]
-                    )
+                    ParserNode.Type.FunctionCallOrListIndexing, {
+                        "func_or_list_ref": ParserNodeRef(ParserNode(ParserNode.Type.InternalInterpreterNode, bracketless_func)),
+                        "param_values": [ParserNode(
+                            ParserNode.Type.InternalInterpreterNode,
+                            bracketless_value_from_python_value(python_param)
+                        ) for python_param in python_params]
+                    }
                 ).interpret(None)
             )
 
@@ -161,6 +162,8 @@ class RichRepr:
                 {ParserNode.Type: "ParserNode", InterpreterNode.Type: "InterpreterNode"}[type(v)] + f".{v.name}")
         if type(v) in [ParserNode, InterpreterNode]:
             return RichRepr.from_any(v.type) + RichRepr.from_any(v.value).indent()
+        if type(v) == ParserNodeRef:
+            return RichRepr.from_str("ParserNodeRef:") + RichRepr.from_any(v.node).indent()
         if type(v) == Scope:
             return RichRepr.from_str("Scope:") + (RichRepr.from_str("Variables:") + RichRepr.from_any(
                 [name for name, value in v.vars.items()]).indent()).indent() + (
@@ -360,22 +363,22 @@ class ParserNode:
                 return self.value[0].interpret(current_scope)
 
         if self.type == ParserNode.Type.Assignment:
-            name = self.value[0]
-            value = self.value[1].interpret(current_scope)
+            name = self.value["name"]
+            value = self.value["value_ref"].node.interpret(current_scope)
             current_scope.set_variable(name, value)
             return value
 
         if self.type == ParserNode.Type.DeclarationAssignment:
-            name = self.value[0]
-            value = self.value[1].interpret(current_scope)
+            name = self.value["name"]
+            value = self.value["value_ref"].node.interpret(current_scope)
             current_scope.define_variable(name, value)
             return value
 
         if self.type == ParserNode.Type.FunctionCallOrListIndexing:
-            func_or_list_expr = self.value[0]
+            func_or_list_expr = self.value["func_or_list_ref"].node
             param_values = [
                 value.interpret(current_scope)
-                for value in self.value[1]
+                for value in self.value["param_values"]
             ]
             func_or_list = func_or_list_expr.interpret(current_scope)
             if func_or_list.type == InterpreterNode.Type.List:
@@ -429,8 +432,8 @@ class ParserNode:
             class_ = current_scope.get_variable(class_name).value
 
         if self.type == ParserNode.Type.PrefixOperation:
-            op = self.value[0]
-            v = self.value[1].interpret(current_scope)
+            op = self.value["op"]
+            v = self.value["value_ref"].node.interpret(current_scope)
             if op == "->":
                 raise Return(v)
             if op == '-':
@@ -447,8 +450,8 @@ class ParserNode:
                 f"Could not interpret PrefixOperation")
 
         if self.type == ParserNode.Type.PostfixOperation:
-            v = self.value[0].interpret(current_scope)
-            op = self.value[1]
+            v = self.value["value_ref"].node.interpret(current_scope)
+            op = self.value["op"]
             if op == '!':
                 if v.type == InterpreterNode.Type.Integer:
                     return InterpreterNode(InterpreterNode.Type.Integer, factorial(v.value))
@@ -458,18 +461,18 @@ class ParserNode:
                     return InterpreterNode(InterpreterNode.Type.Float, inverse_factorial(v_as_float.value))
             raise Exception(f"Could not interpret PostfixOperation with {self.value}")
 
-        if self.type == ParserNode.Type.InfixOperation and self.value[1] == '.':
-            obj = self.value[0].interpret(current_scope)
-            attr = self.value[2]
+        if self.type == ParserNode.Type.InfixOperation and self.value["op"] == '.':
+            obj = self.value["lhs_ref"].node.interpret(current_scope)
+            attr = self.value["rhs_ref"].node
             if attr.type != ParserNode.Type.Identifier:
                 raise Exception
             if obj.type == InterpreterNode.Type.PyLib:
                 return obj.lookup(attr.value)
 
         if self.type == ParserNode.Type.InfixOperation:
-            lhs = self.value[0].interpret(current_scope)
-            op = self.value[1]
-            rhs = self.value[2].interpret(current_scope)
+            lhs = self.value["lhs_ref"].node.interpret(current_scope)
+            op = self.value["op"]
+            rhs = self.value["rhs_ref"].node.interpret(current_scope)
             if op == '+':
                 if lhs.type == InterpreterNode.Type.String and rhs.type == InterpreterNode.Type.String:
                     return InterpreterNode(InterpreterNode.Type.String, lhs.value + rhs.value)
@@ -508,12 +511,13 @@ class ParserNode:
                         if len(params) != 1:
                             raise Exception
                         param = params[0]
-                        return ParserNode(ParserNode.Type.FunctionCallOrListIndexing,
-                                          (ParserNode(ParserNode.Type.InternalInterpreterNode, lhs), [
-                                              ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (
-                                                  ParserNode(ParserNode.Type.InternalInterpreterNode, rhs), [
-                                                      ParserNode(ParserNode.Type.InternalInterpreterNode,
-                                                                 param)]))])).interpret(None)
+                        return ParserNode(ParserNode.Type.FunctionCallOrListIndexing, {
+                            "func_or_list_ref": ParserNodeRef(ParserNode(ParserNode.Type.InternalInterpreterNode, lhs)),
+                            "param_values": [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, {
+                                "func_or_list_ref": ParserNodeRef(ParserNode(ParserNode.Type.InternalInterpreterNode, rhs)),
+                                "param_values": [ParserNode(ParserNode.Type.InternalInterpreterNode, param)]
+                            })]
+                        }).interpret(None)
 
                     return InterpreterNode(InterpreterNode.Type.Function,
                                            {"type": FunctionType.Internal, "body": combined_func})
@@ -574,11 +578,11 @@ class ParserNode:
             value = self.value[0].interpret(current_scope)
             for case in self.value[1]:
                 other_value = case["case"].interpret(current_scope)
-                comparison = ParserNode(ParserNode.Type.InfixOperation, (
-                    ParserNode(ParserNode.Type.InternalInterpreterNode, value),
-                    "==",
-                    ParserNode(ParserNode.Type.InternalInterpreterNode, other_value)
-                )).interpret(None)
+                comparison = ParserNode(ParserNode.Type.InfixOperation, {
+                    "lhs_ref": ParserNodeRef(ParserNode(ParserNode.Type.InternalInterpreterNode, value)),
+                    "op": "==",
+                    "rhs_ref": ParserNodeRef(ParserNode(ParserNode.Type.InternalInterpreterNode, other_value))
+                }).interpret(None)
                 if comparison.type != InterpreterNode.Type.Boolean:
                     raise Exception
                 if comparison.value:
@@ -634,6 +638,55 @@ class ParserNode:
 
         raise Exception(
             f"Could not interpret ParserNode of type {self.type}")
+
+    def rightmost_child(self):
+        if self.type == ParserNode.Type.PrefixOperation:
+            return self.value["value_ref"]
+        if self.type == ParserNode.Type.InfixOperation:
+            return self.value["rhs_ref"]
+        if self.type == ParserNode.Type.Assignment:
+            return self.value["value_ref"]
+        if self.type == ParserNode.Type.DeclarationAssignment:
+            return self.value["value_ref"]
+        else:
+            return None
+
+    def operator_precedence(self):
+        if self.type == ParserNode.Type.Operator:
+            return Syntax.operator_precedence[self.value]
+        if self.type == ParserNode.Type.FunctionCallOrListIndexing:
+            return Syntax.function_call_or_list_indexing_precedence
+        debug_print(rich_repr(self))
+        raise Exception
+
+    def operation_precedence(self):
+        if self.type == ParserNode.Type.FunctionCallOrListIndexing:
+            return Syntax.function_call_or_list_indexing_precedence
+        if self.type == ParserNode.Type.DeclarationAssignment:
+            return Syntax.declaration_assignment_precedence
+        if self.type == ParserNode.Type.Assignment:
+            return Syntax.assignment_precedence
+        if self.type == ParserNode.Type.PrefixOperation:
+            return Syntax.operator_precedence[self.value["op"]]
+        if self.type == ParserNode.Type.InfixOperation:
+            return Syntax.operator_precedence[self.value["op"]]
+        if self.type == ParserNode.Type.PostfixOperation:
+            return Syntax.operator_precendece[self.value["op"]]
+        debug_print(rich_repr(self))
+        raise Exception
+
+
+class ParserNodeRef:
+    def __init__(self, node):
+        self.node = node
+
+    def incorporate_right(self, op, construct_new_node):
+        rightmost_child = self.node.rightmost_child()
+        if rightmost_child != None:
+            if op.operator_precedence() > self.node.operation_precedence():
+                self.node.rightmost_child().incorporate_right(op, construct_new_node)
+                return
+        self.node = construct_new_node(self.node)
 
 
 class InterpreterNode:
@@ -834,9 +887,10 @@ class Builtins:
             raise Exception
         if func.type != InterpreterNode.Type.Function:
             raise Exception
-        return InterpreterNode(InterpreterNode.Type.List, [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (
-            ParserNode(ParserNode.Type.InternalInterpreterNode, func),
-            [ParserNode(ParserNode.Type.InternalInterpreterNode, elem)])).interpret(None) for elem in lst.value])
+        return InterpreterNode(InterpreterNode.Type.List, [ParserNode(ParserNode.Type.FunctionCallOrListIndexing, {
+            "func_or_list_ref": ParserNodeRef(ParserNode(ParserNode.Type.InternalInterpreterNode, func)),
+            "param_values": [ParserNode(ParserNode.Type.InternalInterpreterNode, elem)]
+        }).interpret(None) for elem in lst.value])
 
     builtins["for_each"] = InterpreterNode(InterpreterNode.Type.Function,
                                            {"type": FunctionType.Internal, "body": for_each})
@@ -905,7 +959,31 @@ class Syntax:
         ] + ['//=', 'and'],
         OperatorType.Postfix: ['!', '?']
     }
-    statements = ['if', 'elif', 'else', 'while', 'for', 'switch', 'case']
+    operator_precedence = {
+        "not": 30,
+        "!": 30,
+        "^": 20,
+        "//": 20,
+        ".": 20,
+        "*": 19,
+        "and": 19,
+        "/": 19,
+        "+": 18,
+        "-": 18,
+        ">": 10,
+        "==": 10,
+        "->": 1,
+    }
+    function_call_or_list_indexing_precedence = 50
+    declaration_assignment_precedence = 3
+    assignment_precedence = 2
+
+
+@enum.unique
+class ParseMinimalExpressionResult(enum.Enum):
+    StartNew = 0
+    ExtendPrevious = 1
+    Finish = 2
 
 
 class File:
@@ -970,223 +1048,130 @@ class File:
             elif self.is_comment():
                 self.skip_comment()
 
-    def totally_transform_thing_list(self, things):
+    def parse_minimal_expression(self, is_end, prev_expr):
+        if is_end():
+            return ParseMinimalExpressionResult.Finish, None
+        thing = self.parse_thing()
+        self.skip_useless()
+        # Infix operators need to be parsed before prefix operators because `x - y` should be parsed as `{x - y}` and not `{x} {- y}`
+        if (prev_expr != None and prev_expr.node.is_expression()) and thing.is_infix_operator():
+            result, rhs_value = self.parse_minimal_expression(is_end, None)
+            if not result == ParseMinimalExpressionResult.StartNew:
+                raise Exception
+            if not rhs_value.is_expression():
+                raise Exception
+            return ParseMinimalExpressionResult.ExtendPrevious, (
+                thing,
+                (lambda lhs_value: ParserNode(ParserNode.Type.InfixOperation, {
+                    "lhs_ref": ParserNodeRef(lhs_value),
+                    "op": thing.value,
+                    "rhs_ref": ParserNodeRef(rhs_value)
+                }))
+            )
+        elif thing.is_prefix_operator():
+            result, value = self.parse_minimal_expression(is_end, None)
+            if not result == ParseMinimalExpressionResult.StartNew:
+                raise Exception
+            if not value.is_expression():
+                raise Exception
+            return ParseMinimalExpressionResult.StartNew, ParserNode(ParserNode.Type.PrefixOperation, {"op": thing.value, "value_ref": ParserNodeRef(value)})
+        elif thing.is_postfix_operator():
+            return ParseMinimalExpressionResult.ExtendPrevious, (
+                thing,
+                (lambda value: ParserNode(ParserNode.Type.PostfixOperation, {"value_ref": ParserNodeRef(value), "op": thing.value}))
+            )
+        elif thing.type == ParserNode.Type.AssignmentOperator:
+            result, value = self.parse_minimal_expression(is_end, None)
+            if not result == ParseMinimalExpressionResult.StartNew:
+                raise Exception
+            if not value.is_expression():
+                raise Exception
+            return ParseMinimalExpressionResult.ExtendPrevious, (
+                thing,
+                (lambda identifier: ParserNode(ParserNode.Type.Assignment, {"name": identifier.value, "value_ref": ParserNodeRef(value)}))
+            )
+        elif thing.type == ParserNode.Type.DeclarationAssignmentPrefix:
+            identifier = self.parse_thing()
+            self.skip_useless()
+            assignment = self.parse_thing()
+            self.skip_useless()
+            result, value = self.parse_minimal_expression(is_end, None)
+            if not result == ParseMinimalExpressionResult.StartNew:
+                raise Exception
+            if not value.is_expression():
+                raise Exception
+            return ParseMinimalExpressionResult.StartNew, ParserNode(ParserNode.Type.DeclarationAssignment, {"name": identifier.value, "value_ref": ParserNodeRef(value)})
+        elif (prev_expr != None and prev_expr.node.is_expression()) and (
+            (thing.type == ParserNode.Type.Block and len(thing.value) == 0) or
+            (thing.type == ParserNode.Type.Block and len(thing.value) == 1) or
+            (thing.type == ParserNode.Type.List)
+        ):
+            return ParseMinimalExpressionResult.ExtendPrevious, (
+                ParserNode(ParserNode.Type.FunctionCallOrListIndexing, None),
+                (lambda func_or_list: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, {
+                    "func_or_list_ref": ParserNodeRef(func_or_list),
+                    "param_values": thing.value
+                }))
+            )
+        else:
+            return ParseMinimalExpressionResult.StartNew, thing
 
-        if any([thing.type == ParserNode.Type.Comma for thing in things]):
-            i = 0
-            list_elements = []
-            while True:
-                element_things = []
-                while True:
-                    element_things.append(things[i])
-                    i += 1
-                    if i == len(things):
-                        break
-                    if things[i].type == ParserNode.Type.Comma:
-                        break
-                element_things = self.repeatedly_transform_thing_list(element_things)
-                if len(element_things) != 1:
-                    raise Exception
-                element = element_things[0]
-                list_elements.append(element)
-                if i == len(things):
-                    break
-                if things[i].type != ParserNode.Type.Comma:
-                    raise Exception
-                i += 1
-                if i == len(things):
-                    break
-            return ParserNode(ParserNode.Type.List, list_elements)
-
-        return None
-
-    recognize_patterns_list = [
-        (
-            "assignment",
-            [
-                (lambda elem_0: elem_0.type == ParserNode.Type.Identifier),
-                (lambda elem_1: elem_1.type == ParserNode.Type.AssignmentOperator),
-                (lambda elem_2: elem_2.is_expression()),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.Assignment, (arr[0].value, arr[2]))),
-        ),
-        (
-            "prefix_operation",
-            [
-                (lambda elem_0: elem_0.is_prefix_operator()),
-                (lambda elem_1: elem_1.is_expression()),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.PrefixOperation, (arr[0].value, arr[1]))),
-        ),
-        (
-            "postfix_operation",
-            [
-                (lambda elem_0: elem_0.is_expression()),
-                (lambda elem_1: elem_1.is_postfix_operator()),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.PostfixOperation, (arr[0], arr[1].value))),
-        ),
-        (
-            "infix_operation",
-            [
-                (lambda elem_0: elem_0.is_expression()),
-                (lambda elem_1: elem_1.is_infix_operator()),
-                (lambda elem_2: elem_2.is_expression()),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.InfixOperation, (arr[0], arr[1].value, arr[2]))),
-        ),
-        (
-            "declaration_assignment",
-            [
-                (lambda elem_0: elem_0.type == ParserNode.Type.DeclarationAssignmentPrefix),
-                (lambda elem_1: elem_1.type == ParserNode.Type.Assignment),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.DeclarationAssignment, arr[1].value)),
-        ),
-        (
-            "function_call_or_list_indexing",
-            [
-                (lambda elem_0: elem_0.is_expression()),
-                (lambda elem_1: elem_1.type == ParserNode.Type.Block and len(elem_1.value) == 0),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (arr[0], []))),
-        ),
-        (
-            "function_call_or_list_indexing",
-            [
-                (lambda elem_0: elem_0.is_expression()),
-                (lambda elem_1: elem_1.type == ParserNode.Type.Block and len(elem_1.value) == 1),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (arr[0], [arr[1].value[0]]))),
-        ),
-        (
-            "function_call_or_list_indexing",
-            [
-                (lambda elem_0: elem_0.is_expression()),
-                (lambda elem_1: elem_1.type == ParserNode.Type.List),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.FunctionCallOrListIndexing, (arr[0], arr[1].value))),
-        ),
-        (
-            "if_statement",
-            [
-                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "if"),
-                (lambda elem_1: elem_1.is_expression()),
-                (lambda elem_2: True),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.IfStatement, (arr[1], arr[2]))),
-        ),
-        (
-            "if_else_statement",
-            [
-                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "if"),
-                (lambda elem_1: elem_1.is_expression()),
-                (lambda elem_2: True),
-                (lambda elem_3: elem_3.type == ParserNode.Type.StatementKeyword and elem_3.value == "else"),
-                (lambda elem_4: True),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.IfElseStatement, (arr[1], arr[2], arr[4]))),
-        ),
-        (
-            "for_statement",
-            [
-                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "for"),
-                (lambda elem_1: elem_1.type == ParserNode.Type.Identifier),
-                (lambda elem_2: elem_2.type == ParserNode.Type.Colon),
-                (lambda elem_3: elem_3.is_expression()),
-                (lambda elem_4: True),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.ForStatement, (arr[1].value, arr[3], arr[4]))),
-        ),
-        (
-            "while_statement",
-            [
-                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword and elem_0.value == "while"),
-                (lambda elem_1: elem_1.is_expression()),
-                (lambda elem_2: True),
-            ],
-            (lambda arr: ParserNode(ParserNode.Type.WhileStatement, (arr[1], arr[2]))),
-        ),
-    ]
-
-    recognize_patterns_dict = dict()
-    for (pattern_name, pattern_list, pattern_xform) in recognize_patterns_list:
-        if pattern_name not in recognize_patterns_dict.keys():
-            recognize_patterns_dict[pattern_name] = []
-        recognize_patterns_dict[pattern_name].append((pattern_list, pattern_xform))
-
-    def recognize_pattern(self, pattern_name, things, o):
-        for pattern in self.recognize_patterns_dict[pattern_name]:
-            pattern_list, pattern_xform = pattern
-            if len(things) >= o + len(pattern_list) and all(
-                    [pattern_list[i](things[o + i]) for i in range(len(pattern_list))]):
-                return things[:o] + [pattern_xform(things[o:(o + len(pattern_list))])] + things[
-                                                                                         (o + len(pattern_list)):], True
-        return things, False
-
-    def repeatedly_transform_thing_list(self, things):
-        # The order of this list is important because it dictates the precedence of different types of expressions
-        recognize_list = [
-            "if_else_statement",
-            "if_statement",
-            "for_statement",
-            "while_statement",
-            "function_call_or_list_indexing",
-            "postfix_operation",
-            "infix_operation",
-            "prefix_operation",
-            "assignment",
-            "declaration_assignment",
-        ]
-        i = 0
-        while i < len(recognize_list):
-            did_recognize_any = False
-            for offset in range(len(things)):
-                things, did_recognize = self.recognize_pattern(recognize_list[i], things, offset)
-                if did_recognize:
-                    did_recognize_any = True
-                    break
-            if did_recognize_any:
-                i = 0
-            else:
-                i += 1
-        return things
-
-    def parse_general_block(self, opening_type, closing_type):
-
-        thing = self.parse_thing(no_blocks=True)
-        if thing.type != opening_type:
-            raise Exception(f"{thing.type} is not {opening_type}")
-        things = []
+    def parse_expressions_until(self, is_end):
+        exprs = []
         while True:
-            thing = self.parse_thing()
-            if thing.type == closing_type:
+            result, value = self.parse_minimal_expression(is_end, exprs[-1] if len(exprs) >= 1 else None)
+            if result == ParseMinimalExpressionResult.Finish:
                 break
+            elif result == ParseMinimalExpressionResult.StartNew:
+                exprs.append(ParserNodeRef(value))
+            elif result == ParseMinimalExpressionResult.ExtendPrevious:
+                exprs[-1].incorporate_right(*value)
             else:
-                things.append(thing)
+                raise Exception
+        return [expr.node for expr in exprs]
 
-        final_node = self.totally_transform_thing_list(things)
-        if final_node != None:
-            return final_node
-
-        things = self.repeatedly_transform_thing_list(things)
-        final_node = ParserNode(ParserNode.Type.Block, things)
-        return final_node
-
-    def is_block(self):
+    def is_block_or_list(self):
         return self.is_str('{')
 
-    def parse_block(self):
-        return self.parse_general_block(ParserNode.Type.OpeningCurly,
-                                        ParserNode.Type.ClosingCurly)
+    def parse_block_or_list(self):
+        if not self.is_opening_curly():
+            raise Exception
+        self.parse_opening_curly()
+        self.skip_useless()
+        exprs = self.parse_expressions_until(lambda: self.is_comma() or self.is_closing_curly())
+        if self.is_closing_curly():
+            self.parse_closing_curly()
+            self.skip_useless()
+            return ParserNode(ParserNode.Type.Block, exprs)
+        else:
+            self.parse_comma()
+            self.skip_useless()
+            list_elements = []
+            if len(exprs) != 1:
+                raise Exception
+            list_elements.append(exprs[0])
+            while not self.is_closing_curly():
+                exprs = self.parse_expressions_until(lambda: self.is_comma() or self.is_closing_curly())
+                if not self.is_closing_curly():
+                    self.parse_comma()
+                    self.skip_useless()
+                if len(exprs) != 1:
+                    debug_print(rich_repr(exprs))
+                    raise Exception
+                list_elements.append(exprs[0])
+            self.parse_closing_curly()
+            self.skip_useless()
+            return ParserNode(ParserNode.Type.List, list_elements)
 
-    def parse(self):
-        # self.check_start()
-        # self.skip_useless()
-        # block = self.parse_block()
-        # self.check_end()
-        # return ParserNode()
-        return self.parse_general_block(ParserNode.Type.Start, ParserNode.Type.End)
+    def parse_file(self):
+        if not self.is_start_keyword():
+            raise Exception
+        self.parse_start_keyword()
+        self.skip_useless()
+        exprs = self.parse_expressions_until(lambda: self.is_end_keyword())
+        self.parse_end_keyword()
+        self.skip_useless()
+        return ParserNode(ParserNode.Type.Block, exprs)
 
     def is_builtin_identifier(self):
         return self.is_str('#')
@@ -1206,20 +1191,10 @@ class File:
                 types = list(filter(lambda typ: op in Syntax.operators[typ], Syntax.operators.keys()))
                 return ParserNode(ParserNode.Type.Operator, op)
 
-    def is_statement(self):
-        return self.is_any_str(Syntax.statements)
-
-    def parse_statement(self):
-        for statement in Syntax.statements:
-            if self.is_str(statement):
-                self.position += len(statement)
-                return ParserNode(ParserNode.Type.StatementKeyword, statement)
-
     def is_type_assignment(self):
         ...
 
-    def parse_thing(self, no_blocks=False):
-        self.skip_useless()
+    def parse_thing(self):
         for (is_x, parse_x) in [
             (self.is_start_keyword, self.parse_start_keyword),
             (self.is_class, self.parse_class),
@@ -1227,7 +1202,9 @@ class File:
             (self.is_function, self.parse_function),
             (self.is_end_keyword, self.parse_end_keyword), (self.is_string, self.parse_string),
             (self.is_try, self.parse_try),
-            (self.is_statement, self.parse_statement),
+            (self.is_if_statement, self.parse_if_statement),
+            (self.is_for_statement, self.parse_for_statement),
+            (self.is_while_statement, self.parse_while_statement),
             (self.is_operator, self.parse_operator),
             (self.is_assignment_operator, self.parse_assignment_operator),
             (self.is_declaration_assignment_prefix, self.parse_declaration_assignment_prefix),
@@ -1238,9 +1215,7 @@ class File:
             (self.is_python_import_statement, self.parse_python_import_statement),
             (self.is_boolean, self.parse_boolean),
             (self.is_identifier, self.parse_identifier),
-            ((self.is_opening_curly,
-              self.parse_opening_curly) if no_blocks else
-            (self.is_block, self.parse_block)),
+            (self.is_block_or_list, self.parse_block_or_list),
             (self.is_closing_curly, self.parse_closing_curly),
             (self.is_comma, self.parse_comma),
             (self.is_builtin_identifier, self.parse_builtin_identifier),
@@ -1582,7 +1557,7 @@ class File:
         return lst
 
     def parse_function_body(self):
-        return self.parse_block()
+        return self.parse_block_or_list()
 
     def parse_function(self):
         res = dict()
@@ -1641,13 +1616,70 @@ class File:
             self.skip_useless()
             case = self.parse_thing()
             self.skip_useless()
-            block = self.parse_block()
+            block = self.parse_block_or_list()
             cases.append({"case": case, "block": block})
             self.skip_useless()
 
         self.parse_closing_curly()
 
         return cases
+
+    def is_if_statement(self):
+        return self.is_str("if")
+
+    def parse_if_statement(self):
+        if not self.is_str("if"):
+            raise Exception
+        self.position += len("if")
+        self.skip_useless()
+        predicate = self.parse_thing()
+        self.skip_useless()
+        consequent = self.parse_thing()
+        self.skip_useless()
+        if not self.is_str("else"):
+            return ParserNode(ParserNode.Type.IfStatement, (predicate, consequent))
+        else:
+            self.position += len("else")
+            self.skip_useless()
+            alternative = self.parse_thing()
+            self.skip_useless()
+            return ParserNode(ParserNode.Type.IfElseStatement, (predicate, consequent, alternative))
+
+    def is_for_statement(self):
+        return self.is_str("for")
+
+    def parse_for_statement(self):
+        if not self.is_str("for"):
+            raise Exception
+        self.position += len("for")
+        self.skip_useless()
+        identifier = self.parse_thing()
+        self.skip_useless()
+        if identifier.type != ParserNode.Type.Identifier:
+            raise Exception
+        if not self.is_colon():
+            raise Exception
+        self.parse_colon()
+        self.skip_useless()
+        iterable = self.parse_thing()
+        self.skip_useless()
+        block = self.parse_thing()
+        self.skip_useless()
+        return ParserNode(ParserNode.Type.ForStatement, (identifier.value, iterable, block))
+
+    def is_while_statement(self):
+        return self.is_str("while")
+
+    def parse_while_statement(self):
+        if not self.is_str("while"):
+            raise Exception
+        self.position += len("while")
+        self.skip_useless()
+        condition = self.parse_thing()
+        self.skip_useless()
+        block = self.parse_thing()
+        self.skip_useless()
+        return ParserNode(ParserNode.Type.WhileStatement, (condition, block))
 
     def is_assignment_operator(self):
         return self.is_str("=")
@@ -1673,7 +1705,7 @@ def main(filename):
     with open(filename, "rt", encoding="utf-8") as f:
         contents = f.read()
     file = File(contents)
-    root_node = file.parse()
+    root_node = file.parse_file()
     debug_print("Root ParserNode:")
     debug_print(rich_repr(root_node))
     debug_print("")

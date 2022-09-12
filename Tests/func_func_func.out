@@ -110,9 +110,11 @@ InterpreterNode.Function
                                                                                           LOAD_ATTR
                                                                                           LOAD_GLOBAL
                                                                                           LOAD_GLOBAL
+                                                                                          LOAD_GLOBAL
                                                                                           LOAD_ATTR
                                                                                           LOAD_ATTR
                                                                                           LOAD_DEREF
+                                                                                          CALL_FUNCTION
                                                                                           CALL_FUNCTION
                                                                                           LOAD_CONST
                                                                                           LOAD_CONST
@@ -120,7 +122,8 @@ InterpreterNode.Function
                                                                                           LOAD_FAST
                                                                                           GET_ITER
                                                                                           CALL_FUNCTION
-                                                                                          BUILD_TUPLE
+                                                                                          LOAD_CONST
+                                                                                          BUILD_CONST_KEY_MAP
                                                                                           CALL_FUNCTION
                                                                                           LOAD_METHOD
                                                                                           LOAD_CONST
@@ -198,9 +201,11 @@ InterpreterNode.Function
                                                                                           LOAD_ATTR
                                                                                           LOAD_GLOBAL
                                                                                           LOAD_GLOBAL
+                                                                                          LOAD_GLOBAL
                                                                                           LOAD_ATTR
                                                                                           LOAD_ATTR
                                                                                           LOAD_DEREF
+                                                                                          CALL_FUNCTION
                                                                                           CALL_FUNCTION
                                                                                           LOAD_CONST
                                                                                           LOAD_CONST
@@ -208,7 +213,8 @@ InterpreterNode.Function
                                                                                           LOAD_FAST
                                                                                           GET_ITER
                                                                                           CALL_FUNCTION
-                                                                                          BUILD_TUPLE
+                                                                                          LOAD_CONST
+                                                                                          BUILD_CONST_KEY_MAP
                                                                                           CALL_FUNCTION
                                                                                           LOAD_METHOD
                                                                                           LOAD_CONST
@@ -249,9 +255,11 @@ InterpreterNode.Function
                                                                     LOAD_ATTR
                                                                     LOAD_GLOBAL
                                                                     LOAD_GLOBAL
+                                                                    LOAD_GLOBAL
                                                                     LOAD_ATTR
                                                                     LOAD_ATTR
                                                                     LOAD_DEREF
+                                                                    CALL_FUNCTION
                                                                     CALL_FUNCTION
                                                                     LOAD_GLOBAL
                                                                     LOAD_GLOBAL
@@ -259,9 +267,11 @@ InterpreterNode.Function
                                                                     LOAD_ATTR
                                                                     LOAD_GLOBAL
                                                                     LOAD_GLOBAL
+                                                                    LOAD_GLOBAL
                                                                     LOAD_ATTR
                                                                     LOAD_ATTR
                                                                     LOAD_DEREF
+                                                                    CALL_FUNCTION
                                                                     CALL_FUNCTION
                                                                     LOAD_GLOBAL
                                                                     LOAD_GLOBAL
@@ -270,10 +280,12 @@ InterpreterNode.Function
                                                                     LOAD_FAST
                                                                     CALL_FUNCTION
                                                                     BUILD_LIST
-                                                                    BUILD_TUPLE
+                                                                    LOAD_CONST
+                                                                    BUILD_CONST_KEY_MAP
                                                                     CALL_FUNCTION
                                                                     BUILD_LIST
-                                                                    BUILD_TUPLE
+                                                                    LOAD_CONST
+                                                                    BUILD_CONST_KEY_MAP
                                                                     CALL_FUNCTION
                                                                     LOAD_METHOD
                                                                     LOAD_CONST
@@ -289,9 +301,11 @@ InterpreterNode.Function
                                                       LOAD_ATTR
                                                       LOAD_GLOBAL
                                                       LOAD_GLOBAL
+                                                      LOAD_GLOBAL
                                                       LOAD_ATTR
                                                       LOAD_ATTR
                                                       LOAD_DEREF
+                                                      CALL_FUNCTION
                                                       CALL_FUNCTION
                                                       LOAD_CONST
                                                       LOAD_CONST
@@ -299,7 +313,8 @@ InterpreterNode.Function
                                                       LOAD_FAST
                                                       GET_ITER
                                                       CALL_FUNCTION
-                                                      BUILD_TUPLE
+                                                      LOAD_CONST
+                                                      BUILD_CONST_KEY_MAP
                                                       CALL_FUNCTION
                                                       LOAD_METHOD
                                                       LOAD_CONST
@@ -377,9 +392,11 @@ InterpreterNode.Function
                                                       LOAD_ATTR
                                                       LOAD_GLOBAL
                                                       LOAD_GLOBAL
+                                                      LOAD_GLOBAL
                                                       LOAD_ATTR
                                                       LOAD_ATTR
                                                       LOAD_DEREF
+                                                      CALL_FUNCTION
                                                       CALL_FUNCTION
                                                       LOAD_CONST
                                                       LOAD_CONST
@@ -387,7 +404,8 @@ InterpreterNode.Function
                                                       LOAD_FAST
                                                       GET_ITER
                                                       CALL_FUNCTION
-                                                      BUILD_TUPLE
+                                                      LOAD_CONST
+                                                      BUILD_CONST_KEY_MAP
                                                       CALL_FUNCTION
                                                       LOAD_METHOD
                                                       LOAD_CONST
@@ -428,9 +446,11 @@ InterpreterNode.Function
                                 LOAD_ATTR
                                 LOAD_GLOBAL
                                 LOAD_GLOBAL
+                                LOAD_GLOBAL
                                 LOAD_ATTR
                                 LOAD_ATTR
                                 LOAD_DEREF
+                                CALL_FUNCTION
                                 CALL_FUNCTION
                                 LOAD_GLOBAL
                                 LOAD_GLOBAL
@@ -438,9 +458,11 @@ InterpreterNode.Function
                                 LOAD_ATTR
                                 LOAD_GLOBAL
                                 LOAD_GLOBAL
+                                LOAD_GLOBAL
                                 LOAD_ATTR
                                 LOAD_ATTR
                                 LOAD_DEREF
+                                CALL_FUNCTION
                                 CALL_FUNCTION
                                 LOAD_GLOBAL
                                 LOAD_GLOBAL
@@ -449,10 +471,12 @@ InterpreterNode.Function
                                 LOAD_FAST
                                 CALL_FUNCTION
                                 BUILD_LIST
-                                BUILD_TUPLE
+                                LOAD_CONST
+                                BUILD_CONST_KEY_MAP
                                 CALL_FUNCTION
                                 BUILD_LIST
-                                BUILD_TUPLE
+                                LOAD_CONST
+                                BUILD_CONST_KEY_MAP
                                 CALL_FUNCTION
                                 LOAD_METHOD
                                 LOAD_CONST
@@ -468,9 +492,11 @@ InterpreterNode.Function
                   LOAD_ATTR
                   LOAD_GLOBAL
                   LOAD_GLOBAL
+                  LOAD_GLOBAL
                   LOAD_ATTR
                   LOAD_ATTR
                   LOAD_DEREF
+                  CALL_FUNCTION
                   CALL_FUNCTION
                   LOAD_CONST
                   LOAD_CONST
@@ -478,7 +504,8 @@ InterpreterNode.Function
                   LOAD_FAST
                   GET_ITER
                   CALL_FUNCTION
-                  BUILD_TUPLE
+                  LOAD_CONST
+                  BUILD_CONST_KEY_MAP
                   CALL_FUNCTION
                   LOAD_METHOD
                   LOAD_CONST
