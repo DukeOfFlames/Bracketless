@@ -527,6 +527,9 @@ class ParserNode:
 
                     return InterpreterNode(InterpreterNode.Type.Function,
                                            {"type": FunctionType.Internal, "body": combined_func})
+            if op == 'and':
+                if lhs.type == InterpreterNode.Type.Boolean and rhs.type == InterpreterNode.Type.Boolean:
+                    return InterpreterNode(InterpreterNode.Type.Boolean, lhs.value and rhs.value)
             debug_print(rich_repr(lhs))
             debug_print(rich_repr(op))
             debug_print(rich_repr(rhs))
