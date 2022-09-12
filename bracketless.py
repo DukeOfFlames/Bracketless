@@ -701,6 +701,7 @@ class ParserNode:
             while True:
                 should_continue = condition.interpret(current_scope)
                 if should_continue.type != InterpreterNode.Type.Boolean:
+                    debug_print(rich_repr(should_continue))
                     raise Exception
                 if not should_continue.value:
                     break
@@ -844,6 +845,16 @@ class Builtins:
 
     builtins["drucke"] = InterpreterNode(
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": drucke}
+    )
+
+    def builtin_string(current_scope, params):
+        if len(params) != 1:
+            raise Exception
+        return InterpreterNode(InterpreterNode.Type.String, params[0].representation())
+
+    builtins["string"] = InterpreterNode(
+        InterpreterNode.Type.Function,
+        {"type": FunctionType.Internal, "body": builtin_string},
     )
 
     def max(current_scope, params):
