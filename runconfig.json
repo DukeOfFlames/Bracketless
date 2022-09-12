@@ -2,6 +2,8 @@
 	"visible": [
 	],
 	"silent": [
+		"operator_parsing",
+		"weird_return",
 		"complex_statements",
 		"two_args",
 		"bad_formatting",
