@@ -354,7 +354,6 @@ class ParserNode:
         List = 13
         Assignment = 14
         String = 15
-        ConditionalExpression = 16
         StatementKeyword = 17
         Function = 18
         ForLoop = 19
@@ -392,7 +391,6 @@ class ParserNode:
                 ParserNode.Type.List,
                 ParserNode.Type.Assignment,
                 ParserNode.Type.String,
-                ParserNode.Type.ConditionalExpression,
                 ParserNode.Type.Function,
                 ParserNode.Type.Class,
                 ParserNode.Type.Boolean,
@@ -1204,42 +1202,6 @@ class File:
             ),
         ),
         (
-            "conditional_expression",
-            [
-                (lambda elem_0: elem_0.type == ParserNode.Type.StatementKeyword),
-                (
-                    lambda elem_1: elem_1.type
-                    in [
-                        ParserNode.Type.Identifier,
-                        ParserNode.Type.String,
-                        ParserNode.Type.Integer,
-                        ParserNode.Type.List,
-                        ParserNode.Type.Function,
-                    ]
-                ),
-                (
-                    lambda elem_2: elem_2.is_infix_operator()
-                    and not elem_2.value in ["==", "<", ">", ">=", "<=", "%"]
-                ),
-                (
-                    lambda elem_3: elem_3.type
-                    in [
-                        ParserNode.Type.Identifier,
-                        ParserNode.Type.String,
-                        ParserNode.Type.Integer,
-                        ParserNode.Type.List,
-                        ParserNode.Type.Function,
-                    ]
-                ),
-            ],
-            (
-                lambda arr: ParserNode(
-                    ParserNode.Type.ConditionalExpression,
-                    (arr[0].value, arr[1].value, arr[2].value),
-                )
-            ),
-        ),
-        (
             "prefix_operation",
             [
                 (lambda elem_0: elem_0.is_prefix_operator() and elem_0.value != "°"),
@@ -1426,7 +1388,6 @@ class File:
             "function_call_or_list_indexing",
             "postfix_operation",
             "infix_operation",
-            "conditional_expression",
             "prefix_operation",
             "assignment",
             "declaration_assignment",
