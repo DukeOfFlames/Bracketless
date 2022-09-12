@@ -697,6 +697,13 @@ class Builtins:
 
     builtins["drucke"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": drucke})
 
+    def builtin_string(current_scope, params):
+        if len(params) != 1:
+            raise Exception
+        return InterpreterNode(InterpreterNode.Type.String, params[0].representation())
+
+    builtins["string"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_string})
+
     def max(current_scope, params):
         if len(params) != 1:
             raise Exception
