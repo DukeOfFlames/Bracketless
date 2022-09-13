@@ -385,12 +385,6 @@ class ParserNode:
         AssignmentOperator = 47
         DeclarationAssignmentPrefix = 48
 
-        def is_iterable(self):
-            return self in [ParserNode.Type.String, ParserNode.Type.List]
-
-        def is_number(self):
-            return self in [ParserNode.Type.Integer, ParserNode.Type.Float]
-
     def __init__(self, type, value):
         self.type = type
         self.value = value
@@ -924,14 +918,15 @@ class Builtins:
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": count}
     )
 
-    def sum(current_scope, params):
+    def builtin_sum(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
         if not lst.type == InterpreterNode.Type.List:
             raise Exception
-        if not all([node.type.is_number() for node in lst.value]) or all(
-            [node.type == InterpreterNode.Type.Float for node in lst.value]
+        if not (
+            all([node.type == InterpreterNode.Type.Integer for node in lst.value])
+            or all([node.type == InterpreterNode.Type.Float for node in lst.value])
         ):
             raise Exception
 
@@ -949,8 +944,9 @@ class Builtins:
                 res += l
             return InterpreterNode(InterpreterNode.Type.Float, res)
 
-    builtins["min"] = InterpreterNode(
-        InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": min}
+    builtins["sum"] = InterpreterNode(
+        InterpreterNode.Type.Function,
+        {"type": FunctionType.Internal, "body": builtin_sum},
     )
 
     def avg(current_scope, params):
