@@ -305,16 +305,6 @@ class ParserNode:
         AssignmentOperator = 47
         DeclarationAssignmentPrefix = 48
 
-        def is_iterable(self):
-            return self in [
-                ParserNode.Type.String, ParserNode.Type.List
-            ]
-
-        def is_number(self):
-            return self in [
-                ParserNode.Type.Integer, ParserNode.Type.Float
-            ]
-
     def __init__(self, type, value):
         self.type = type
         self.value = value
