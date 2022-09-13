@@ -1,0 +1,28 @@
+START
+{
+    fn a{} { -> °b = 1 }
+    #drucke{a{}}
+    °c = °d = 1
+    #drucke{c}
+    °e = 2
+    e = °f = 1
+    #drucke{e}
+    °g = {not °h = false}
+    #drucke{g}
+}
+{
+    °b = 0
+    fn a{} { -> {b = 1} }
+    #drucke{a{}}
+    °d = 0
+    °c = {d = 1}
+    #drucke{c}
+    °f = 0
+    °e = 2
+    e = {f = 1}
+    #drucke{e}
+    °h = false
+    °g = {not {h = false}}
+    #drucke{g}
+}
+END
