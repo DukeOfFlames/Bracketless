@@ -2,6 +2,7 @@
 	"visible": [
 	],
 	"silent": [
+		"weird_assignments",
 		"operator_parsing",
 		"weird_return",
 		"complex_statements",
