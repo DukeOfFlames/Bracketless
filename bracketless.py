@@ -1476,17 +1476,6 @@ class File:
         # return ParserNode()
         return self.parse_general_block(ParserNode.Type.Start, ParserNode.Type.End)
 
-    def check_start(self):
-        if not self.is_str("START") in self.content:
-            raise WhereToStartError("ABC")  # details = position of error
-
-    def check_end(self):
-        if self.is_str("END"):
-            sys.exit()
-
-    def is_separator(self):
-        return self.is_any_str(self.separators)
-
     def is_builtin_identifier(self):
         return self.is_str("#")
 
@@ -1522,9 +1511,6 @@ class File:
 
     def is_type_assignment(self):
         ...
-
-    def return_string(self):
-        return ParserNode(ParserNode.Type.String, self.string)
 
     def parse_thing(self, no_blocks=False):
         self.skip_useless()
@@ -1948,17 +1934,6 @@ class File:
             if self.is_str(s):
                 self.position += len(s)
                 return ParserNode(ParserNode.Type.Boolean, s == "true")
-
-    def parse_any(self):
-        result = ""
-        while not self.is_whitespace():
-            result += self.get()
-            self.position += 1
-
-        if len(result) == 0:
-            raise Exception
-
-        return result
 
     def is_switch(self):
         return self.is_str("switch")
