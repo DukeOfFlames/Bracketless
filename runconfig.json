@@ -2,6 +2,7 @@
 	"visible": [
 	],
 	"silent": [
+		"operator_precedence",
 		"sum_floats",
 		"weird_assignments",
 		"operator_parsing",
