@@ -1218,9 +1218,6 @@ class File:
     def is_type_assignment(self):
         ...
 
-    def return_string(self):
-        return ParserNode(ParserNode.Type.String, self.string)
-
     def parse_thing(self, no_blocks=False):
         self.skip_useless()
         for (is_x, parse_x) in [
