@@ -1712,7 +1712,7 @@ class File:
             raise Exception
         self.position += 1
         s = ""
-        while self.get() != '"':
+        while not self.is_str('"'):
             s += self.get()
             self.position += 1
         self.position += 1
