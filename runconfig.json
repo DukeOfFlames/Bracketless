@@ -42,6 +42,8 @@
 		"builtin_functions",
 		"negative_numbers",
 		"multiple_parameters",
+		"format_strings/format",
+		"format_strings/spaces",
 		"complex_dot_n/1",
 		"complex_dot_n/2",
 		"complex_dot_n/3",

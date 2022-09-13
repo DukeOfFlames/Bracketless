@@ -14,14 +14,14 @@ if false {
 }
 
 for n : {#range{5}} {
-    #drucke{"for " + #string{n} + " 1"}
-    #drucke{"for " + #string{n} + " 2"}
+    #drucke{"for 'n' 1"}
+    #drucke{"for 'n' 2"}
 }
 
 °x = 4.0
 while {x > 0.4} {
-    #drucke{"while " + #string{x} + " 1"}
-    #drucke{"while " + #string{x} + " 2"}
+    #drucke{"while 'x' 1"}
+    #drucke{"while 'x' 2"}
     x = x / 3
 }
 

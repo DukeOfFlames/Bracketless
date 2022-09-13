@@ -174,6 +174,8 @@ class RichRepr:
             return RichRepr.from_str(str(v))
         if type(v) == OperatorType:
             return RichRepr.from_str(str(v))
+        if type(v) == FormatStringPart:
+            return RichRepr.from_str(str(v))
         if hasattr(v, "__call__"):
             res = RichRepr.from_str("Python Function:")
             res += (RichRepr.from_str("Name:") + RichRepr.from_str(v.__name__).indent()).indent()
@@ -307,6 +309,7 @@ class ParserNode:
         SwitchStatement = 46
         AssignmentOperator = 47
         DeclarationAssignmentPrefix = 48
+        FormatString = 49
 
     def __init__(self, type, value):
         self.type = type
@@ -317,14 +320,12 @@ class ParserNode:
 
     def is_expression(self):
         if self.type in [
-            ParserNode.Type.Identifier, ParserNode.Type.Integer,
-            ParserNode.Type.List, ParserNode.Type.Assignment, ParserNode.Type.String,
-            ParserNode.Type.Function, ParserNode.Type.Class,
-            ParserNode.Type.Boolean, ParserNode.Type.FunctionCallOrListIndexing, ParserNode.Type.PrefixOperation,
-            ParserNode.Type.PostfixOperation, ParserNode.Type.InfixOperation,
-            ParserNode.Type.DeclarationAssignment,
-            ParserNode.Type.BuiltinIdentifier,
-            ParserNode.Type.Float
+            ParserNode.Type.Identifier, ParserNode.Type.Integer, ParserNode.Type.List,
+            ParserNode.Type.Assignment, ParserNode.Type.String, ParserNode.Type.Function,
+            ParserNode.Type.Class, ParserNode.Type.Boolean, ParserNode.Type.FunctionCallOrListIndexing,
+            ParserNode.Type.PrefixOperation, ParserNode.Type.PostfixOperation, ParserNode.Type.InfixOperation,
+            ParserNode.Type.DeclarationAssignment, ParserNode.Type.BuiltinIdentifier, ParserNode.Type.Float,
+            ParserNode.Type.FormatString
         ]:
             return True
         if self.type == ParserNode.Type.Block and len(self.value) == 1:
@@ -617,6 +618,18 @@ class ParserNode:
             if "name" in self.value.keys():
                 current_scope.define_variable(self.value["name"], interpreted_self)
             return interpreted_self
+
+        if self.type == ParserNode.Type.FormatString:
+            part_list = self.value
+            res = ""
+            for part_type, part_value in part_list:
+                if part_type == FormatStringPart.String:
+                    res += part_value
+                elif part_type == FormatStringPart.Expression:
+                    res += part_value.interpret(current_scope).representation()
+                else:
+                    raise Exception
+            return InterpreterNode(InterpreterNode.Type.String, res)
 
         if self.type == ParserNode.Type.List:
             return InterpreterNode(InterpreterNode.Type.List, [elem.interpret(current_scope) for elem in self.value])
@@ -984,6 +997,12 @@ class ParseMinimalExpressionResult(enum.Enum):
     StartNew = 0
     ExtendPrevious = 1
     Finish = 2
+
+
+@enum.unique
+class FormatStringPart(enum.Enum):
+    String = 0
+    Expression = 1
 
 
 class File:
@@ -1417,11 +1436,30 @@ class File:
             raise Exception
         self.position += 1
         s = ""
+        part_list = None
         while not self.is_str('"'):
-            s += self.get()
-            self.position += 1
+            if self.is_str("'"):
+                self.position += 1
+                self.skip_useless()
+                if part_list == None:
+                    part_list = []
+                part_list.append((FormatStringPart.String, s))
+                s = ""
+                exprs = self.parse_expressions_until(lambda: self.is_str("'"))
+                self.position += 1
+                if len(exprs) != 1:
+                    raise Exception
+                part_list.append((FormatStringPart.Expression, exprs[0]))
+            else:
+                s += self.get()
+                self.position += 1
         self.position += 1
-        return ParserNode(ParserNode.Type.String, s)
+        if part_list == None:
+            return ParserNode(ParserNode.Type.String, s)
+        else:
+            part_list.append((FormatStringPart.String, s))
+            s = ""
+            return ParserNode(ParserNode.Type.FormatString, part_list)
 
     def is_colon(self):
         return self.is_str(':')
