@@ -750,14 +750,16 @@ class Builtins:
 
     builtins["count"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": count})
 
-    def sum(current_scope, params):
+    def builtin_sum(current_scope, params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
         if not lst.type == InterpreterNode.Type.List:
             raise Exception
-        if not all([node.type.is_number() for node in lst.value]) or all(
-                [node.type == InterpreterNode.Type.Float for node in lst.value]):
+        if not (
+            all([node.type == InterpreterNode.Type.Integer for node in lst.value]) or
+            all([node.type == InterpreterNode.Type.Float for node in lst.value])
+        ):
             raise Exception
 
         if not all([node.type == InterpreterNode.Type.Integer for node in lst.value]):
@@ -774,7 +776,7 @@ class Builtins:
                 res += l
             return InterpreterNode(InterpreterNode.Type.Float, res)
 
-    builtins["min"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": min})
+    builtins["sum"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": builtin_sum})
 
     def avg(current_scope, params):
         if len(params) != 1:
