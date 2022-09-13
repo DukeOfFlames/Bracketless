@@ -800,9 +800,11 @@ class Builtins:
         if len(params) != 1:
             raise Exception
         lst = params[0]
-        if not lst.type == InterpreterNode.Type.List:
-            raise Exception
-        return InterpreterNode(InterpreterNode.Type.Integer, len([node.value for node in lst.value]))
+        if lst.type == InterpreterNode.Type.List:
+            return InterpreterNode(InterpreterNode.Type.Integer, len(lst.value))
+        if lst.type == InterpreterNode.Type.String:
+            return InterpreterNode(InterpreterNode.Type.Integer, len(lst.value))
+        raise Exception
 
     builtins["count"] = InterpreterNode(InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": count})
 
