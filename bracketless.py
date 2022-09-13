@@ -1188,9 +1188,6 @@ class File:
         # return ParserNode()
         return self.parse_general_block(ParserNode.Type.Start, ParserNode.Type.End)
 
-    def is_separator(self):
-        return self.is_any_str(self.separators)
-
     def is_builtin_identifier(self):
         return self.is_str('#')
 
