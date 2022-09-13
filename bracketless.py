@@ -1609,17 +1609,6 @@ class File:
                 self.position += len(s)
                 return ParserNode(ParserNode.Type.Boolean, s == "true")
 
-    def parse_any(self):
-        result = ''
-        while not self.is_whitespace():
-            result += self.get()
-            self.position += 1
-
-        if len(result) == 0:
-            raise Exception
-
-        return result
-
     def is_switch(self):
         return self.is_str('switch')
 
