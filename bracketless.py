@@ -1705,15 +1705,14 @@ class File:
         return ParserNode(ParserNode.Type.PyLibImportStatement, lib)
 
     def is_string(self):
-        return self.is_any_str(['"', "'"])
+        return self.is_str('"')
 
     def parse_string(self):
-        if not self.is_any_str(['"', "'"]):
+        if not self.is_str('"'):
             raise Exception
-        quote_type = self.get()
         self.position += 1
         s = ""
-        while self.get() != quote_type:
+        while self.get() != '"':
             s += self.get()
             self.position += 1
         self.position += 1
