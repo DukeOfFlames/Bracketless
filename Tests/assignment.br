@@ -1,13 +1,9 @@
 START
-°a = "Hi (with Double Quotes)"
+°a = "Hi (with Quotes)"
 °b = a
-°c = 'Hi (with Single Quotes)'
-°d = c
-°e = {°f = 1}
+°c = {°d = 1}
 #drucke{a}
 #drucke{b}
 #drucke{c}
 #drucke{d}
-#drucke{e}
-#drucke{f}
 END
