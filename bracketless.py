@@ -1188,14 +1188,6 @@ class File:
         # return ParserNode()
         return self.parse_general_block(ParserNode.Type.Start, ParserNode.Type.End)
 
-    def check_start(self):
-        if not self.is_str('START') in self.content:
-            raise WhereToStartError('ABC')  # details = position of error
-
-    def check_end(self):
-        if self.is_str('END'):
-            sys.exit()
-
     def is_separator(self):
         return self.is_any_str(self.separators)
 
