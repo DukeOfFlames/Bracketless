@@ -1,0 +1,4 @@
+START
+#drucke{3 + 4 * 5 ^ 6}
+#drucke{5 ^ 6 * 4 + 3}
+END

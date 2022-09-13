@@ -2,6 +2,8 @@
 	"visible": [
 	],
 	"silent": [
+		"operator_precedence",
+		"boolean_operator_precedence",
 		"sum_floats",
 		"weird_assignments",
 		"operator_parsing",
@@ -52,7 +54,6 @@
 		"complex_dot_n/10"
 	],
 	"broken": [
-		"boolean_operator_precedence",
 		"point",
 		"reversed",
 		"test",
