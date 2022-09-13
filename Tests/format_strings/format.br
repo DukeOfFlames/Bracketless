@@ -1,0 +1,8 @@
+START
+°list = {1, 2, 3, 4}
+°x = 777
+#drucke{"hi"}
+#drucke{"'x'"}
+#drucke{"...'list'..."}
+#drucke{"'x' 'list' 'x'"}
+END

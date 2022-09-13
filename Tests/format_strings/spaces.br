@@ -1,0 +1,4 @@
+START
+°x = 1
+#drucke{"a-' x '-b"}
+END
