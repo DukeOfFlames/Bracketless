@@ -958,6 +958,19 @@ class WhereToStartError(Error):
                          self.details)  # Error: chars  @ x y IN file
 
 
+class InternalError(Exception):
+    pass
+
+
+class UserError(Exception):
+    def __init__(self, file, msg):
+        self.file = file
+        self.msg = msg
+
+    def __str__(self):
+        return f"Error in file {self.file.filename} on line {self.file.line_counter + 1} in column {self.file.column_counter + 1}: {self.msg}"
+
+
 @enum.unique
 class OperatorType(enum.Enum):
     Prefix = 0
@@ -1008,8 +1021,10 @@ class FormatStringPart(enum.Enum):
 
 
 class File:
-    def __init__(self, content):
-        self.content = content
+    def __init__(self, filename):
+        self.filename = filename
+        with open(self.filename, "rt", encoding="utf-8") as f:
+            self.content = f.read()
         self.position = 0
         self.line_counter = 0
         self.column_counter = 0
@@ -1021,6 +1036,11 @@ class File:
         return self.content[self.position:(self.position + length)]
 
     def advance(self, n):
+        if self.is_str('\n'):
+            self.line_counter += 1
+            self.column_counter = 0
+        else:
+            self.column_counter += 1
         self.position += n
 
     def is_str(self, s):
@@ -1034,8 +1054,6 @@ class File:
 
     def skip_whitespace(self):
         while self.is_whitespace():
-            if self.is_str('\n'):
-                self.line_counter += 1
             self.advance(1)
 
     def is_singleline_comment(self):
@@ -1453,7 +1471,7 @@ class File:
                 exprs = self.parse_expressions_until(lambda: self.is_str("'"))
                 self.advance(1)
                 if len(exprs) != 1:
-                    raise Exception
+                    raise UserError(self, "Multiple expressions in one pair of single quotes in format-string")
                 part_list.append((FormatStringPart.Expression, exprs[0]))
             else:
                 s += self.get()
@@ -1744,9 +1762,7 @@ class File:
 
 def main(filename):
     debug_print(f"Running file: {filename}")
-    with open(filename, "rt", encoding="utf-8") as f:
-        contents = f.read()
-    file = File(contents)
+    file = File(filename)
     root_node = file.parse_file()
     debug_print("Root ParserNode:")
     debug_print(rich_repr(root_node))
