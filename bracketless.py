@@ -1049,6 +1049,11 @@ class File:
     def is_any_str(self, lst):
         return any([self.is_str(s) for s in lst])
 
+    def parse_str(self, s):
+        if not self.is_str(s):
+            raise Exception
+        self.advance(len(s))
+
     def is_whitespace(self):
         return self.is_any_str(string.whitespace)
 
@@ -1219,7 +1224,7 @@ class File:
         return self.is_str('#')
 
     def parse_builtin_identifier(self):
-        self.advance(1)
+        self.parse_str('#')
         name = self.parse_identifier().value
         return ParserNode(ParserNode.Type.BuiltinIdentifier, name)
 
@@ -1229,7 +1234,7 @@ class File:
     def parse_operator(self):
         for op in sorted(flatten_list(Syntax.operators.values()), key=len, reverse=True):
             if self.is_str(op):
-                self.advance(len(op))
+                self.parse_str(op)
                 types = list(filter(lambda typ: op in Syntax.operators[typ], Syntax.operators.keys()))
                 return ParserNode(ParserNode.Type.Operator, op)
 
@@ -1381,28 +1386,28 @@ class File:
         return self.is_str("START")
 
     def parse_start_keyword(self):
-        self.advance(5)
+        self.parse_str("START")
         return ParserNode(ParserNode.Type.Start, None)
 
     def is_end_keyword(self):
         return self.is_str("END")
 
     def parse_end_keyword(self):
-        self.advance(3)
+        self.parse_str("END")
         return ParserNode(ParserNode.Type.End, None)
 
     def is_opening_curly(self):
         return self.is_str('{')
 
     def parse_opening_curly(self):
-        self.advance(1)
+        self.parse_str('{')
         return ParserNode(ParserNode.Type.OpeningCurly, None)
 
     def is_closing_curly(self):
         return self.is_str('}')
 
     def parse_closing_curly(self):
-        self.advance(1)
+        self.parse_str('}')
         return ParserNode(ParserNode.Type.ClosingCurly, None)
 
     def is_type(self):
@@ -1420,7 +1425,7 @@ class File:
             'bool', 'dict'
         ]:
             if self.is_str(typename):
-                self.advance(len(typename))
+                self.parse_str(typename)
                 return ParserNode(ParserNode.Type.Type, typename)
         raise Exception
 
@@ -1428,14 +1433,14 @@ class File:
         return self.is_str(',')
 
     def parse_comma(self):
-        self.advance(1)
+        self.parse_str(',')
         return ParserNode(ParserNode.Type.Comma, None)
 
     def is_import_statement(self):
         return self.is_str('lib')
 
     def parse_import_statement(self):
-        self.advance(3)
+        self.parse_str('lib')
         self.skip_useless()
         lib = self.parse_identifier().value
         self.skip_useless()
@@ -1445,7 +1450,7 @@ class File:
         return self.is_str('pylib')
 
     def parse_python_import_statement(self):
-        self.advance(5)
+        self.parse_str('pylib')
         self.skip_useless()
         lib = self.parse_identifier().value
         self.skip_useless()
@@ -1488,21 +1493,17 @@ class File:
         return self.is_str(':')
 
     def parse_colon(self):
-        self.advance(1)
+        self.parse_str(':')
         return ParserNode(ParserNode.Type.Colon, ':')
 
     def is_try(self):
         return self.is_str('try')
 
     def parse_try_keyword(self):
-        if not self.is_str('try'):
-            raise Exception
-        self.advance(3)
+        self.parse_str('try')
 
     def parse_except_keyword(self):
-        if not self.is_str('except'):
-            raise Exception
-        self.advance(6)
+        self.parse_str('except')
 
     def parse_error_keyword(self):
         self.errors = ['Exception', 'CommittedDeadlySinError']
@@ -1535,9 +1536,7 @@ class File:
         return self.is_str('cl')
 
     def parse_class_keyword(self):
-        if not self.is_str("cl"):
-            raise Exception
-        self.advance(2)
+        self.parse_str('cl')
 
     def parse_class_name(self):
         if not self.is_identifier():
@@ -1564,9 +1563,7 @@ class File:
         return self.is_str("fn")
 
     def parse_function_keyword(self):
-        if not self.is_str("fn"):
-            raise Exception
-        self.advance(2)
+        self.parse_str("fn")
 
     def is_function_name(self):
         return self.is_identifier()
@@ -1641,16 +1638,14 @@ class File:
     def parse_boolean(self):
         for s in ["true", "false"]:
             if self.is_str(s):
-                self.advance(len(s))
+                self.parse_str(s)
                 return ParserNode(ParserNode.Type.Boolean, s == "true")
 
     def is_switch(self):
         return self.is_str('switch')
 
     def parse_switch_keyword(self):
-        if not self.is_str('switch'):
-            raise Exception
-        self.advance(6)
+        self.parse_str('switch')
 
     def parse_switch(self):
         self.parse_switch_keyword()
@@ -1663,9 +1658,7 @@ class File:
         return ParserNode(ParserNode.Type.SwitchStatement, (sw, cases))
 
     def parse_case_keyword(self):
-        if not self.is_str('case'):
-            raise Exception
-        self.advance(4)
+       self.parse_str('case')
 
     def parse_case_block(self):
         cases = []
@@ -1688,9 +1681,7 @@ class File:
         return self.is_str("if")
 
     def parse_if_statement(self):
-        if not self.is_str("if"):
-            raise Exception
-        self.advance(len("if"))
+        self.parse_str("if")
         self.skip_useless()
         predicate = self.parse_thing()
         self.skip_useless()
@@ -1709,9 +1700,7 @@ class File:
         return self.is_str("for")
 
     def parse_for_statement(self):
-        if not self.is_str("for"):
-            raise Exception
-        self.advance(len("for"))
+        self.parse_str("for")
         self.skip_useless()
         identifier = self.parse_thing()
         self.skip_useless()
@@ -1731,9 +1720,7 @@ class File:
         return self.is_str("while")
 
     def parse_while_statement(self):
-        if not self.is_str("while"):
-            raise Exception
-        self.advance(len("while"))
+        self.parse_str("while")
         self.skip_useless()
         condition = self.parse_thing()
         self.skip_useless()
@@ -1745,18 +1732,14 @@ class File:
         return self.is_str("=")
 
     def parse_assignment_operator(self):
-        if not self.is_str("="):
-            raise Exception
-        self.advance(1)
+        self.parse_str("=")
         return ParserNode(ParserNode.Type.AssignmentOperator, None)
 
     def is_declaration_assignment_prefix(self):
         return self.is_str("°")
 
     def parse_declaration_assignment_prefix(self):
-        if not self.is_str("°"):
-            raise Exception
-        self.advance(1)
+        self.parse_str("°")
         return ParserNode(ParserNode.Type.DeclarationAssignmentPrefix, None)
 
 
