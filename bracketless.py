@@ -364,15 +364,15 @@ class ParserNode:
                 return self.value[0].interpret(current_scope)
 
         if self.type == ParserNode.Type.Assignment:
-            name = self.value["name"]
+            target = self.value["target_ref"].node
             value = self.value["value_ref"].node.interpret(current_scope)
-            current_scope.set_variable(name, value)
+            target.set_as_lvalue(current_scope, value)
             return value
 
         if self.type == ParserNode.Type.DeclarationAssignment:
-            name = self.value["name"]
+            target = self.value["target_ref"].node
             value = self.value["value_ref"].node.interpret(current_scope)
-            current_scope.define_variable(name, value)
+            target.define_as_lvalue(current_scope, value)
             return value
 
         if self.type == ParserNode.Type.FunctionCallOrListIndexing:
@@ -418,19 +418,21 @@ class ParserNode:
                     return func_body(func_param_values)
                 else:
                     raise Exception
+            if func_or_list.type == InterpreterNode.Type.Class:
+                cls = func_or_list
+                constructor_param_values = param_values
+                constructor = cls.create_class_instance().get_attribute("init")
+                if not constructor.type == InterpreterNode.Type.Function:
+                    raise Exception
+                return ParserNode(ParserNode.Type.FunctionCallOrListIndexing, {
+                    "func_or_list_ref": ParserNodeRef(ParserNode(ParserNode.Type.InternalInterpreterNode, constructor)),
+                    "param_values": [ParserNode(ParserNode.Type.InternalInterpreterNode, param) for param in constructor_param_values]
+                }).interpret(None)
             debug_print(rich_repr(func_or_list_expr))
             debug_print(rich_repr(func_or_list))
             debug_print(type(func_or_list))
             raise Exception(
-                f"Cannot interpret FunctionCallOrListIndexing because {func_or_list} is neither a function nor a list")
-
-        if self.type == ParserNode.Type.Class:
-            class_name = self.value[0]
-            class_functions = [
-                value.interpret(current_scope)
-                for value in self.value[1]
-            ]
-            class_ = current_scope.get_variable(class_name).value
+                f"Cannot interpret FunctionCallOrListIndexing because the \"function or list\" is neither a function nor a list")
 
         if self.type == ParserNode.Type.PrefixOperation:
             op = self.value["op"]
@@ -466,6 +468,7 @@ class ParserNode:
             obj = self.value["lhs_ref"].node.interpret(current_scope)
             attr = self.value["rhs_ref"].node
             if attr.type != ParserNode.Type.Identifier:
+                debug_print(rich_repr(attr))
                 raise Exception
             if obj.type == InterpreterNode.Type.PyLib:
                 return obj.lookup(attr.value)
@@ -619,6 +622,18 @@ class ParserNode:
                 current_scope.define_variable(self.value["name"], interpreted_self)
             return interpreted_self
 
+        if self.type == ParserNode.Type.Class:
+            class_scope = Scope(current_scope)
+            interpreted_self = InterpreterNode(
+                InterpreterNode.Type.Class, {
+                    "functions": [function.interpret(class_scope) for function in self.value["functions"]],
+                    "class_scope": class_scope
+                }
+            )
+            if "name" in self.value.keys():
+                current_scope.define_variable(self.value["name"], interpreted_self)
+            return interpreted_self
+
         if self.type == ParserNode.Type.FormatString:
             part_list = self.value
             res = ""
@@ -652,6 +667,32 @@ class ParserNode:
         raise Exception(
             f"Could not interpret ParserNode of type {self.type}")
 
+    def define_as_lvalue(self, current_scope, value):
+        if self.type == ParserNode.Type.Identifier:
+            current_scope.define_variable(self.value, value)
+        elif self.type == ParserNode.Type.InfixOperation and self.value["op"] == ".":
+            obj = self.value["lhs_ref"].node.interpret(current_scope)
+            attr = self.value["rhs_ref"].node
+            if attr.type != ParserNode.Type.Identifier:
+                debug_print(rich_repr(attr))
+                raise Exception
+            obj.define_attribute(attr.value, value)
+        else:
+            raise Exception
+
+    def set_as_lvalue(self, current_scope, value):
+        if self.type == ParserNode.Type.Identifier:
+            current_scope.define_variable(self.value, value)
+        elif self.type == ParserNode.Type.InfixOperation and self.value["op"] == ".":
+            obj = self.value["lhs_ref"].node.interpret(current_scope)
+            attr = self.value["rhs_ref"].node
+            if attr.type != ParserNode.Type.Identifier:
+                debug_print(rich_repr(attr))
+                raise Exception
+            obj.set_attribute(attr.value, value)
+        else:
+            raise Exception
+
     def rightmost_child(self):
         if self.type == ParserNode.Type.PrefixOperation:
             return self.value["value_ref"]
@@ -665,10 +706,12 @@ class ParserNode:
             return None
 
     def operator_precedence(self):
-        if self.type == ParserNode.Type.Operator:
-            return Syntax.operator_precedence[self.value]
         if self.type == ParserNode.Type.FunctionCallOrListIndexing:
             return Syntax.function_call_or_list_indexing_precedence
+        if self.type == ParserNode.Type.AssignmentOperator:
+            return Syntax.assignment_precedence
+        if self.type == ParserNode.Type.Operator:
+            return Syntax.operator_precedence[self.value]
         debug_print(rich_repr(self))
         raise Exception
 
@@ -716,6 +759,7 @@ class InterpreterNode:
         Binary = 36
         Octal = 37
         PyLib = 38
+        ClassInstance = 39
 
     def __init__(self, type, value):
         self.type = type
@@ -750,10 +794,36 @@ class InterpreterNode:
             return InterpreterNode(InterpreterNode.Type.Float, self.value)
         return None
 
-    def lookup(self, name):
+    def get_attribute(self, name):
         if self.type == InterpreterNode.Type.PyLib:
             return bracketless_value_from_python_value(getattr(self.value, name))
+        if self.type == InterpreterNode.Type.Class:
+            return self.value["class_scope"].get_variable(name)
+        debug_print(rich_repr(self))
         raise Exception
+
+    def define_attribute(self, name, value):
+        if self.type == InterpreterNode.Type.PyLib:
+            setattr(self.value, name, python_value_from_bracketless_value(value))
+        elif self.type == InterpreterNode.Type.Class:
+            self.value["class_scope"].define_variable(name, value)
+        else:
+            debug_print(rich_repr(self))
+            raise Exception
+
+    def set_attribute(self, name, value):
+        if self.type == InterpreterNode.Type.PyLib:
+            setattr(self.value, name, python_value_from_bracketless_value(value))
+        elif self.type == InterpreterNode.Type.Class:
+            self.value["class_scope"].set_variable(name, value)
+        else:
+            debug_print(rich_repr(self))
+            raise Exception
+
+    def create_class_instance(self):
+        if not self.type == InterpreterNode.Type.Class:
+            raise Exception
+        return InterpreterNode(InterpreterNode.Type.ClassInstance, {"class": self})
 
 
 class Builtins:
@@ -1136,19 +1206,21 @@ class File:
                 raise Exception
             return ParseMinimalExpressionResult.ExtendPrevious, (
                 thing,
-                (lambda identifier: ParserNode(ParserNode.Type.Assignment, {"name": identifier.value, "value_ref": ParserNodeRef(value)}))
+                (lambda identifier: ParserNode(ParserNode.Type.Assignment, {"target_ref": ParserNodeRef(identifier), "value_ref": ParserNodeRef(value)}))
             )
         elif thing.type == ParserNode.Type.DeclarationAssignmentPrefix:
-            identifier = self.parse_thing()
-            self.skip_useless()
-            assignment = self.parse_thing()
-            self.skip_useless()
-            result, value = self.parse_minimal_expression(is_end, None)
+            result, assignment = self.parse_minimal_expression(is_end, None)
             if not result == ParseMinimalExpressionResult.StartNew:
                 raise Exception
-            if not value.is_expression():
+            assignment = ParserNodeRef(assignment)
+            while not assignment.node.type == ParserNode.Type.Assignment:
+                result, extension = self.parse_minimal_expression(is_end, assignment)
+                if not result == ParseMinimalExpressionResult.ExtendPrevious:
+                    raise Exception
+                assignment.incorporate_right(*extension)
+            if not assignment.node.type == ParserNode.Type.Assignment:
                 raise Exception
-            return ParseMinimalExpressionResult.StartNew, ParserNode(ParserNode.Type.DeclarationAssignment, {"name": identifier.value, "value_ref": ParserNodeRef(value)})
+            return ParseMinimalExpressionResult.StartNew, ParserNode(ParserNode.Type.DeclarationAssignment, {"target_ref": assignment.node.value["target_ref"], "value_ref": assignment.node.value["value_ref"]})
         elif (prev_expr != None and prev_expr.node.is_expression()) and (
             (thing.type == ParserNode.Type.Block and len(thing.value) == 0) or
             (thing.type == ParserNode.Type.Block and len(thing.value) == 1) or
@@ -1550,7 +1622,6 @@ class File:
         name = self.parse_class_name()
         self.skip_useless()
         functions = []
-        own = []
         self.parse_opening_curly()
         self.skip_useless()
         while not self.is_closing_curly():
@@ -1558,7 +1629,7 @@ class File:
         self.parse_closing_curly()
         self.skip_useless()
 
-        return ParserNode(ParserNode.Type.Class, {'name': name, 'function_names': functions, 'own': own})
+        return ParserNode(ParserNode.Type.Class, {'name': name, 'functions': functions})
 
     def is_function(self):
         return self.is_str("fn")

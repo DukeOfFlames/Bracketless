@@ -3,7 +3,7 @@ START
 
 cl Max{
     fn init{max}{
-        own.max = max
+        °own.max = max
     }
 
     fn max{}{
@@ -11,8 +11,8 @@ cl Max{
     }
 }
 
-max = Max.max{max}
-drucke = #max{max, max, max}
+°max = {Max{max}.max}{}
+°drucke = #max{max, max, max}
 
 #drucke{drucke}
 END

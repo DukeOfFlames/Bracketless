@@ -2,6 +2,7 @@
 	"visible": [
 	],
 	"silent": [
+		"s",
 		"operator_precedence",
 		"boolean_operator_precedence",
 		"sum_floats",
