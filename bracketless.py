@@ -1268,12 +1268,13 @@ class File:
         return self.content[self.position : (self.position + length)]
 
     def advance(self, n):
-        if self.is_str("\n"):
-            self.line_counter += 1
-            self.column_counter = 0
-        else:
-            self.column_counter += 1
-        self.position += n
+        for i in range(n):
+            if self.is_str("\n"):
+                self.line_counter += 1
+                self.column_counter = 0
+            else:
+                self.column_counter += 1
+            self.position += 1
 
     def is_str(self, s):
         return self.slice(len(s)) == s
