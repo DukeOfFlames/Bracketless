@@ -136,7 +136,7 @@ def bracketless_value_from_python_value(python_value):
     if hasattr(python_value, "__call__"):
         python_func = python_value
 
-        def call(current_scope, bracketless_params):
+        def call(bracketless_params):
             return bracketless_value_from_python_value(
                 python_func(
                     *[
@@ -509,7 +509,7 @@ class ParserNode:
                     return return_value
                 elif func["type"] == FunctionType.Internal:
                     func_body = func["body"]
-                    return func_body(current_scope, func_param_values)
+                    return func_body(func_param_values)
                 else:
                     raise Exception
             debug_print(rich_repr(func_or_list_expr))
@@ -643,7 +643,7 @@ class ParserNode:
                     and rhs.type == InterpreterNode.Type.Function
                 ):
 
-                    def combined_func(current_scope, params):
+                    def combined_func(params):
                         if len(params) != 1:
                             raise Exception
                         param = params[0]
@@ -936,7 +936,7 @@ class InterpreterNode:
 class Builtins:
     builtins = dict()
 
-    def drucke(current_scope, params):
+    def drucke(params):
         for param in params:
             output_print(param.representation())
 
@@ -944,7 +944,7 @@ class Builtins:
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": drucke}
     )
 
-    def builtin_string(current_scope, params):
+    def builtin_string(params):
         if len(params) != 1:
             raise Exception
         return InterpreterNode(InterpreterNode.Type.String, params[0].representation())
@@ -954,7 +954,7 @@ class Builtins:
         {"type": FunctionType.Internal, "body": builtin_string},
     )
 
-    def max(current_scope, params):
+    def max(params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -970,7 +970,7 @@ class Builtins:
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": max}
     )
 
-    def min(current_scope, params):
+    def min(params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -986,7 +986,7 @@ class Builtins:
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": min}
     )
 
-    def count(current_scope, params):
+    def count(params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -1000,7 +1000,7 @@ class Builtins:
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": count}
     )
 
-    def builtin_sum(current_scope, params):
+    def builtin_sum(params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -1031,7 +1031,7 @@ class Builtins:
         {"type": FunctionType.Internal, "body": builtin_sum},
     )
 
-    def avg(current_scope, params):
+    def avg(params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -1052,7 +1052,7 @@ class Builtins:
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": avg}
     )
 
-    def hex(current_scope, params):
+    def hex(params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -1065,7 +1065,7 @@ class Builtins:
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": hex}
     )
 
-    def bin(current_scope, params):
+    def bin(params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -1078,7 +1078,7 @@ class Builtins:
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": bin}
     )
 
-    def oct(current_scope, params):
+    def oct(params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -1087,7 +1087,7 @@ class Builtins:
 
         return InterpreterNode(InterpreterNode.Type.Octal, oct(lst.value))
 
-    def builtin_range(current_scope, params):
+    def builtin_range(params):
         if len(params) != 1:
             raise Exception
         end = params[0]
@@ -1104,7 +1104,7 @@ class Builtins:
         {"type": FunctionType.Internal, "body": builtin_range},
     )
 
-    def for_each(current_scope, params):
+    def for_each(params):
         if len(params) != 2:
             raise Exception
         lst, func = params
@@ -1134,7 +1134,7 @@ class Builtins:
         InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": for_each}
     )
 
-    def builtin_all(current_scope, params):
+    def builtin_all(params):
         if len(params) != 1:
             raise Exception
         lst = params[0]
@@ -1153,7 +1153,7 @@ class Builtins:
         {"type": FunctionType.Internal, "body": builtin_all},
     )
 
-    def builtin_round(current_scope, params):
+    def builtin_round(params):
         if len(params) == 1:
             num = params[0]
             return InterpreterNode(InterpreterNode.Type.Integer, round(num.value))
