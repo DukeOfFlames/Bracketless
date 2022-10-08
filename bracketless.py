@@ -452,6 +452,7 @@ class ParserNode:
 
         if self.type == ParserNode.Type.PostfixOperation:
             v = self.value["value_ref"].node.interpret(current_scope)
+            identifier = self.value["value_ref"].node
             op = self.value["op"]
             if op == '!':
                 if v.type == InterpreterNode.Type.Integer:
@@ -460,6 +461,11 @@ class ParserNode:
                 v_as_float = v.convert_to_float()
                 if v_as_float != None:
                     return InterpreterNode(InterpreterNode.Type.Float, inverse_factorial(v_as_float.value))
+            if op == '++':
+                if identifier.type == ParserNode.Type.Identifier and v.type == InterpreterNode.Type.Integer:
+                    new_v = InterpreterNode(InterpreterNode.Type.Integer, v.value + 1)
+                    current_scope.set_variable(identifier.value, new_v)
+                    return new_v
             raise Exception(f"Could not interpret PostfixOperation with {self.value}")
 
         if self.type == ParserNode.Type.InfixOperation and self.value["op"] == '.':
@@ -985,7 +991,7 @@ class Syntax:
             '//', '%=', '+=', '==', '-=', '*=', '^=', '==', '/=', '>=',
             '<=', 'or'
         ] + ['//=', 'and'],
-        OperatorType.Postfix: ['!', '?']
+        OperatorType.Postfix: ['!', '?', '++']
     }
     operator_precedence = {
         "not": 30,
