@@ -1096,6 +1096,21 @@ class Builtins:
 
         return InterpreterNode(InterpreterNode.Type.Octal, oct(lst.value))
 
+    builtins["oct"] = InterpreterNode(
+        InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": oct}
+    )
+
+    def str(params):
+        if len(params) != 1:
+            raise Exception
+        lst = params[0]
+
+        return InterpreterNode(InterpreterNode.Type.String, str(lst.value))
+
+    builtins["str"] = InterpreterNode(
+        InterpreterNode.Type.Function, {"type": FunctionType.Internal, "body": str}
+    )
+
     def builtin_range(params):
         if len(params) != 1:
             raise Exception
