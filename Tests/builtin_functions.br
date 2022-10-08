@@ -6,9 +6,11 @@ START
 °max = #max{list}
 °hex = #hex{13}
 °bin = #bin{4!}
+°str = #str{214}
 #drucke{max}
 #drucke{hex}
 #drucke{bin}
+#drucke{str}
 
 °r = #round{0.57, 1}
 #drucke{r}
