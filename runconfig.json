@@ -54,7 +54,8 @@
 		"complex_dot_n/7",
 		"complex_dot_n/8",
 		"complex_dot_n/9",
-		"complex_dot_n/10"
+		"complex_dot_n/10",
+		"add_one"
 	],
 	"broken": [
 		"point",

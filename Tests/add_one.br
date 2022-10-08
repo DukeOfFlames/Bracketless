@@ -1,0 +1,5 @@
+START
+°x = 12
+x++
+#drucke{x}
+END
