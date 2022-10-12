@@ -1467,7 +1467,7 @@ class File:
     def is_block_or_list(self):
         return self.is_str("{")
 
-    def parse_block_or_list(self):
+    def parse_block_or_list(self, is_class_function=False):
         if not self.is_opening_curly():
             raise Exception
         self.parse_opening_curly()
@@ -1876,7 +1876,7 @@ class File:
         name = self.parse_class_name()
         self.skip_useless()
         functions = []
-        own = []
+        own = {}
         self.parse_opening_curly()
         self.skip_useless()
         while not self.is_closing_curly():
@@ -1943,10 +1943,10 @@ class File:
 
         return lst
 
-    def parse_function_body(self):
-        return self.parse_block_or_list()
+    def parse_function_body(self, is_class_function=False):
+        return self.parse_block_or_list(is_class_function)
 
-    def parse_function(self):
+    def parse_function(self, is_class_function=False):
         res = dict()
         self.parse_function_keyword()
         self.skip_useless()
@@ -1955,9 +1955,15 @@ class File:
             self.skip_useless()
         res["param_names"] = self.parse_function_parameter_list()
         self.skip_useless()
-        res["body"] = self.parse_function_body()
+        if is_class_function:
+            res["body"], own_variables = self.parse_function_body(True)
+        else:
+            res["body"] = self.parse_function_body()
         self.skip_useless()
-        return ParserNode(ParserNode.Type.Function, res)
+        if is_class_function:
+            return ParserNode(ParserNode.Type.Function, res), own_variables
+        else:
+            return ParserNode(ParserNode.Type.Function, res)
 
     def is_boolean(self):
         for s in ["true", "false"]:
